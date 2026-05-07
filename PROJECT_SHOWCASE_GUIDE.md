@@ -7,7 +7,7 @@ This project is a cloud-based operations and inventory alerting system for a sma
 The main showcase is not the programming language. The main showcase is the business logic and cloud workflow:
 
 ```text
-POS sales transaction -> Azure Function -> Azure Table Storage -> low-stock alert -> operations visibility
+POS menu order -> recipe deduction logic -> Azure Table Storage -> low-stock alert -> operations visibility
 ```
 
 ## Business Scenario
@@ -150,6 +150,42 @@ LOW STOCK ALERT: pork_chashu only has 18 left. Reorder level is 20.
 Showcase value:
 
 > Automated inventory monitoring by sending webhook alerts when tracked items dropped below predefined reorder thresholds.
+
+## Stage 3.5: Menu Order Recipe Logic
+
+Goal: Make the demo feel like a real ramen POS workflow.
+
+Completed:
+
+- Added menu item handling for six ramen products:
+  - 博多鹽味豚骨拉麺
+  - 博多黑蒜拉麵
+  - 博多赤味噌拉麺
+  - 博多味噌牛油拉麵
+  - 鹿兒島黑豚王軟骨拉麵
+  - 赤鬼王拉麵
+- Each menu order now deducts multiple ingredient rows from Azure Table Storage.
+- Added support for payloads such as:
+
+```json
+{
+  "menu_item_id": "hakata_black_garlic",
+  "qty_ordered": 1
+}
+```
+
+- Kept the direct inventory deduction mode for support/testing:
+
+```json
+{
+  "item": "corn",
+  "qty_sold": 2
+}
+```
+
+Showcase value:
+
+> Implemented POS-style menu recipe logic where each customer order automatically deducts the correct ingredient-level inventory records.
 
 ## Stage 4: Dashboard
 

@@ -19,15 +19,15 @@ Bash:
 ```bash
 curl -X POST "https://f1-bqamdrc8epekgqbw.canadacentral-01.azurewebsites.net/api/httpreceivesales" \
   -H "Content-Type: application/json" \
-  -d '{"item":"pork_chashu","qty_sold":3}'
+  -d '{"menu_item_id":"hakata_black_garlic","qty_ordered":1}'
 ```
 
 PowerShell:
 
 ```powershell
 $body = @{
-  item = "pork_chashu"
-  qty_sold = 3
+  menu_item_id = "hakata_black_garlic"
+  qty_ordered = 1
 } | ConvertTo-Json
 
 Invoke-RestMethod -Uri "https://f1-bqamdrc8epekgqbw.canadacentral-01.azurewebsites.net/api/httpreceivesales" -Method Post -ContentType "application/json" -Body $body
@@ -42,6 +42,8 @@ Point out:
 - `reorder_level`
 - `low_stock`
 - `alert_sent`
+
+For a menu order, explain that one customer order creates several ingredient-level inventory updates.
 
 ## 5. Confirm Cloud Database Update
 
@@ -62,7 +64,7 @@ Example:
 ```bash
 curl -X POST "https://f1-bqamdrc8epekgqbw.canadacentral-01.azurewebsites.net/api/httpreceivesales" \
   -H "Content-Type: application/json" \
-  -d '{"item":"soft_drink","qty_sold":70}'
+  -d '{"menu_item_id":"akaoni_king","qty_ordered":70}'
 ```
 
 Expected result:

@@ -29,6 +29,13 @@ Create rows in the `Inventory` table:
 
 Use integer fields for `stock` and `reorderLevel`.
 
+For ramen menu logic, seed the ingredient rows:
+
+```powershell
+$env:STORAGE_CONNECTION_STRING="<storage-account-connection-string>"
+npm run seed:menu
+```
+
 ## Function App Settings
 
 In Azure Portal, open Function App `f1`, then go to Environment variables.
@@ -55,7 +62,7 @@ func azure functionapp publish f1 --javascript
 ```bash
 curl -X POST "https://f1-bqamdrc8epekgqbw.canadacentral-01.azurewebsites.net/api/httpreceivesales" \
   -H "Content-Type: application/json" \
-  -d '{"item":"pork_chashu","qty_sold":2}'
+  -d '{"menu_item_id":"hakata_black_garlic","qty_ordered":1}'
 ```
 
-Check the `Inventory` table afterward to confirm `stock` was reduced.
+Check the `Inventory` table afterward to confirm ingredient rows such as `tonkotsu_broth`, `black_garlic_sauce`, `black_pork_chashu`, `corn`, `kombu`, and `narutomaki` were reduced.

@@ -5,7 +5,8 @@
   "main": "src/functions/*.js",
   "scripts": {
     "start": "func start",
-    "test": "echo \"No tests yet...\""
+    "seed:menu": "node scripts/seedMenuInventory.js",
+    "test": "node --check src/functions/HttpReceiveSales.js"
   },
   "dependencies": {
     "@azure/data-tables": "^13.3.2",

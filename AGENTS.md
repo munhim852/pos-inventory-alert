@@ -11,7 +11,7 @@ Show business logic and cloud ability, not just coding language skill.
 Main demo flow:
 
 ```text
-Simulated POS sale -> Azure Function -> Azure Table Storage inventory update -> Discord low-stock alert
+Simulated POS menu order -> Azure Function recipe logic -> Azure Table Storage inventory update -> Discord low-stock alert
 ```
 
 ## Important Azure Resources
@@ -42,22 +42,32 @@ https://f1-bqamdrc8epekgqbw.canadacentral-01.azurewebsites.net/api/httpreceivesa
 
 `HttpReceiveSales`:
 
-- Accepts POST JSON payloads:
+- Accepts direct inventory POST JSON payloads:
 
 ```json
 {
-  "item": "pork_chashu",
+  "item": "corn",
   "qty_sold": 2
 }
 ```
 
+- Accepts POS menu order payloads:
+
+```json
+{
+  "menu_item_id": "hakata_black_garlic",
+  "qty_ordered": 1
+}
+```
+
 - Validates JSON and required fields.
-- Reads inventory item from Azure Table Storage.
+- Resolves menu item recipes for ramen orders.
+- Reads inventory items from Azure Table Storage.
 - Uses:
   - `PartitionKey = store-001`
-  - `RowKey = item`
-- Deducts `qty_sold` from `stock`.
-- Updates the table row.
+  - `RowKey = item or ingredient id`
+- Deducts `qty_sold` from direct inventory items or ingredient quantities from menu orders.
+- Updates the table row or rows.
 - Returns:
   - `previous_stock`
   - `remaining_stock`
@@ -170,17 +180,31 @@ Stage 3: Low-stock alerting
 - Code support added for Discord webhook alerting.
 - Still needs real `DISCORD_WEBHOOK_URL` configured and final low-stock alert test.
 
+Stage 3.5: Ramen menu recipe logic
+
+- Code supports six ramen menu items:
+  - `hakata_shio_tonkotsu` - 博多鹽味豚骨拉麺
+  - `hakata_black_garlic` - 博多黑蒜拉麵
+  - `hakata_red_miso` - 博多赤味噌拉麺
+  - `hakata_miso_butter` - 博多味噌牛油拉麵
+  - `kagoshima_kurobuta_cartilage` - 鹿兒島黑豚王軟骨拉麵
+  - `akaoni_king` - 赤鬼王拉麵
+- Each order deducts ingredient-level rows such as `tonkotsu_broth`, `black_pork_chashu`, `ajitama_egg`, `corn`, `kombu`, and `narutomaki`.
+- `scripts/seedMenuInventory.js` seeds the required ingredient rows.
+
 Stage 4: Dashboard
 
 - Planned, not built yet.
 
 ## Next Best Tasks
 
-1. Configure `DISCORD_WEBHOOK_URL` in Azure Function App `f1`.
-2. Deploy if code changed.
-3. Test a sale that drops stock below reorder level.
-4. Confirm Discord alert.
-5. Add a dashboard or read-only inventory endpoint.
+1. Run `npm run seed:menu` with `STORAGE_CONNECTION_STRING` set.
+2. Deploy updated menu-order code to Azure Function App `f1`.
+3. Test menu order payloads.
+4. Configure `DISCORD_WEBHOOK_URL` in Azure Function App `f1`.
+5. Test a sale that drops stock below reorder level.
+6. Confirm Discord alert.
+7. Add a dashboard or read-only inventory endpoint.
 
 ## Safety
 
