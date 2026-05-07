@@ -8,7 +8,7 @@ const inventorySeed = [
     { rowKey: 'spicy_tonkotsu_broth', displayName: '辣豚骨湯底', stock: 80, reorderLevel: 20 },
     { rowKey: 'miso_broth', displayName: '味噌湯底', stock: 100, reorderLevel: 25 },
     { rowKey: 'black_garlic_sauce', displayName: '黑蒜醬', stock: 80, reorderLevel: 15 },
-    { rowKey: 'black_pork_chashu', displayName: '黑豚叉燒', stock: 120, reorderLevel: 25 },
+    { rowKey: 'pork_chashu', displayName: '黑豚叉燒', stock: 120, reorderLevel: 25 },
     { rowKey: 'pork_cartilage', displayName: '豬肉軟骨', stock: 60, reorderLevel: 15 },
     { rowKey: 'minced_pork', displayName: '炒豬肉碎', stock: 80, reorderLevel: 20 },
     { rowKey: 'ajitama_egg', displayName: '溏心蛋', stock: 140, reorderLevel: 30 },

@@ -9,7 +9,7 @@ const menuRecipes = {
         price: 1.50,
         ingredients: {
             tonkotsu_broth: 1,
-            black_pork_chashu: 1,
+            pork_chashu: 1,
             ajitama_egg: 1,
             corn: 1,
             kombu: 1,
@@ -22,7 +22,7 @@ const menuRecipes = {
         ingredients: {
             tonkotsu_broth: 1,
             black_garlic_sauce: 1,
-            black_pork_chashu: 1,
+            pork_chashu: 1,
             ajitama_egg: 1,
             corn: 1,
             kombu: 1,
@@ -34,7 +34,7 @@ const menuRecipes = {
         price: 1.50,
         ingredients: {
             miso_broth: 1,
-            black_pork_chashu: 1,
+            pork_chashu: 1,
             ajitama_egg: 1,
             corn: 1,
             kombu: 1,
@@ -47,7 +47,7 @@ const menuRecipes = {
         ingredients: {
             miso_broth: 1,
             butter: 1,
-            black_pork_chashu: 1,
+            pork_chashu: 1,
             ajitama_egg: 1,
             corn: 1,
             kombu: 1,
@@ -135,6 +135,28 @@ function resolveMenuItem(body) {
     return null;
 }
 
+function resolveIngredients(menuItem, ingredientOverrides) {
+    if (!ingredientOverrides || typeof ingredientOverrides !== 'object' || Array.isArray(ingredientOverrides)) {
+        return menuItem.ingredients;
+    }
+
+    const ingredients = {};
+
+    for (const [ingredient, defaultQty] of Object.entries(menuItem.ingredients)) {
+        const overrideQty = Number(ingredientOverrides[ingredient] ?? defaultQty);
+
+        if (!Number.isFinite(overrideQty) || overrideQty < 0) {
+            throw new Error(`Invalid ingredient usage for ${ingredient}.`);
+        }
+
+        if (overrideQty > 0) {
+            ingredients[ingredient] = overrideQty;
+        }
+    }
+
+    return ingredients;
+}
+
 async function updateInventoryItem(tableClient, item, qtySold, context) {
     const inventoryItem = await tableClient.getEntity(storeId, item);
     const currentStock = Number(inventoryItem.stock);
@@ -173,6 +195,29 @@ async function updateInventoryItem(tableClient, item, qtySold, context) {
     };
 }
 
+async function restockInventoryItem(tableClient, item, qtyRestock) {
+    const inventoryItem = await tableClient.getEntity(storeId, item);
+    const currentStock = Number(inventoryItem.stock);
+    const reorderLevel = Number(inventoryItem.reorderLevel);
+    const newStock = currentStock + qtyRestock;
+
+    await tableClient.updateEntity({
+        partitionKey: storeId,
+        rowKey: item,
+        stock: newStock,
+        reorderLevel
+    }, 'Merge');
+
+    return {
+        item,
+        qty_restock: qtyRestock,
+        previous_stock: currentStock,
+        remaining_stock: newStock,
+        reorder_level: reorderLevel,
+        low_stock: newStock <= reorderLevel
+    };
+}
+
 app.http('HttpReceiveSales', {
     methods: ['POST'],
     authLevel: 'anonymous',
@@ -190,9 +235,21 @@ app.http('HttpReceiveSales', {
 
         const item = body.item;
         const menuItem = resolveMenuItem(body);
+        const action = body.action ?? 'sale';
         const qtySold = Number(body.qty_sold ?? body.qty_ordered ?? 1);
+        const qtyRestock = Number(body.qty_restock ?? body.qty_added ?? 0);
 
-        if ((!item && !menuItem) || !Number.isInteger(qtySold) || qtySold <= 0) {
+        if (action === 'restock') {
+            if (!item || !Number.isInteger(qtyRestock) || qtyRestock <= 0) {
+                return {
+                    status: 400,
+                    jsonBody: {
+                        status: 'error',
+                        message: 'Send JSON like { "action": "restock", "item": "pork_chashu", "qty_restock": 20 }.'
+                    }
+                };
+            }
+        } else if ((!item && !menuItem) || !Number.isInteger(qtySold) || qtySold <= 0) {
             return {
                 status: 400,
                 jsonBody: {
@@ -204,13 +261,27 @@ app.http('HttpReceiveSales', {
 
         const tableClient = getTableClient();
 
-        context.log(`Item: ${item ?? menuItem.id} | Qty sold: ${qtySold}`);
+        context.log(`Action: ${action} | Item: ${item ?? menuItem?.id} | Qty sold: ${qtySold} | Qty restock: ${qtyRestock}`);
 
         try {
+            if (action === 'restock') {
+                const inventoryUpdate = await restockInventoryItem(tableClient, item, qtyRestock);
+
+                return {
+                    status: 200,
+                    jsonBody: {
+                        status: 'ok',
+                        order_type: 'restock',
+                        ...inventoryUpdate
+                    }
+                };
+            }
+
             if (menuItem) {
                 const inventoryUpdates = [];
+                const ingredients = resolveIngredients(menuItem, body.ingredient_overrides);
 
-                for (const [ingredient, qtyPerOrder] of Object.entries(menuItem.ingredients)) {
+                for (const [ingredient, qtyPerOrder] of Object.entries(ingredients)) {
                     inventoryUpdates.push(
                         await updateInventoryItem(tableClient, ingredient, qtyPerOrder * qtySold, context)
                     );
@@ -226,6 +297,7 @@ app.http('HttpReceiveSales', {
                         qty_ordered: qtySold,
                         price: menuItem.price,
                         total: Number((menuItem.price * qtySold).toFixed(2)),
+                        ingredient_usage: ingredients,
                         inventory_updates: inventoryUpdates,
                         low_stock_items: inventoryUpdates.filter((update) => update.low_stock).map((update) => update.item)
                     }

@@ -190,6 +190,12 @@ Stage 3.5: Ramen menu recipe logic
   - `kagoshima_kurobuta_cartilage` - 鹿兒島黑豚王軟骨拉麵
   - `akaoni_king` - 赤鬼王拉麵
 - Each order deducts ingredient-level rows such as `tonkotsu_broth`, `black_pork_chashu`, `ajitama_egg`, `corn`, `kombu`, and `narutomaki`.
+- Shared pools are important:
+  - All chashu usage should deduct `pork_chashu`.
+  - Common toppings should deduct shared rows: `ajitama_egg`, `corn`, `kombu`, `narutomaki`.
+  - Tonkotsu-based ramen share `tonkotsu_broth`.
+- UI supports editable per-bowl ingredient usage through `ingredient_overrides`.
+- Backend supports restock payloads with `action: "restock"`.
 - `scripts/seedMenuInventory.js` seeds the required ingredient rows.
 
 Stage 4: Dashboard

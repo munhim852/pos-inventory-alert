@@ -32,6 +32,11 @@
           <input id="quantity" name="quantity" type="number" min="1" step="1" value="1">
         </label>
 
+        <div class="usage-block">
+          <div class="usage-title">Ingredient usage per bowl</div>
+          <div id="usageFields" class="usage-fields"></div>
+        </div>
+
         <button type="submit" id="submitButton">Submit order</button>
       </form>
     </section>
@@ -71,6 +76,29 @@
         <summary>Raw JSON</summary>
         <pre id="rawJson">{}</pre>
       </details>
+    </section>
+
+    <section class="panel restock-panel">
+      <div>
+        <p class="eyebrow">Restock</p>
+        <h2>Add Inventory</h2>
+      </div>
+
+      <form id="restockForm" class="form compact">
+        <label>
+          Ingredient
+          <select id="restockItem" name="restockItem"></select>
+        </label>
+
+        <label>
+          Quantity added
+          <input id="restockQuantity" name="restockQuantity" type="number" min="1" step="1" value="10">
+        </label>
+
+        <button type="submit" id="restockButton">Restock item</button>
+      </form>
+
+      <div id="restockSummary" class="summary muted">Use this to refill shared ingredient pools.</div>
     </section>
   </main>
 

@@ -165,12 +165,18 @@ Completed:
   - 鹿兒島黑豚王軟骨拉麵
   - 赤鬼王拉麵
 - Each menu order now deducts multiple ingredient rows from Azure Table Storage.
+- Shared ingredients use one inventory pool. For example, all ramen that use chashu deduct from `pork_chashu`, and common toppings such as `ajitama_egg`, `corn`, `kombu`, `narutomaki`, and `tonkotsu_broth` are shared across menu items.
+- Added editable ingredient usage so a test order can override the default quantity per bowl.
+- Added restock support for replenishing an inventory item.
 - Added support for payloads such as:
 
 ```json
 {
   "menu_item_id": "hakata_black_garlic",
-  "qty_ordered": 1
+  "qty_ordered": 1,
+  "ingredient_overrides": {
+    "pork_chashu": 2
+  }
 }
 ```
 
@@ -186,6 +192,16 @@ Completed:
 Showcase value:
 
 > Implemented POS-style menu recipe logic where each customer order automatically deducts the correct ingredient-level inventory records.
+
+Restock payload:
+
+```json
+{
+  "action": "restock",
+  "item": "pork_chashu",
+  "qty_restock": 20
+}
+```
 
 ## Stage 4: Dashboard
 

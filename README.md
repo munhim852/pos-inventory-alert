@@ -148,6 +148,11 @@ http://localhost:5173
 
 The UI lets you choose a ramen menu item, enter quantity sold, submit the order, and review the ingredient-level inventory updates returned by the Azure Function.
 
+The UI also supports:
+
+- Editing ingredient usage per bowl before submitting an order.
+- Restocking a shared ingredient pool such as `pork_chashu`, `tonkotsu_broth`, `ajitama_egg`, `corn`, `kombu`, or `narutomaki`.
+
 Validate JavaScript syntax:
 
 ```bash
