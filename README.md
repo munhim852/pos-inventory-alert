@@ -134,6 +134,20 @@ Run locally:
 npm start
 ```
 
+Run the local test UI:
+
+```bash
+npm run ui
+```
+
+Then open:
+
+```text
+http://localhost:5173
+```
+
+The UI lets you choose a ramen menu item, enter quantity sold, submit the order, and review the ingredient-level inventory updates returned by the Azure Function.
+
 Validate JavaScript syntax:
 
 ```bash

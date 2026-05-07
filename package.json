@@ -5,6 +5,7 @@
   "main": "src/functions/*.js",
   "scripts": {
     "start": "func start",
+    "ui": "node scripts/uiServer.js",
     "seed:menu": "node scripts/seedMenuInventory.js",
     "test": "node --check src/functions/HttpReceiveSales.js"
   },

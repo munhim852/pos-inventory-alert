@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>POS Inventory Test UI</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="app">
+    <section class="panel order-panel">
+      <div>
+        <p class="eyebrow">Ramen POS Test</p>
+        <h1>Inventory Order Console</h1>
+      </div>
+
+      <form id="orderForm" class="form">
+        <label>
+          Menu item
+          <select id="menuItem" name="menuItem">
+            <option value="hakata_shio_tonkotsu">博多鹽味豚骨拉麺 - $1.50</option>
+            <option value="hakata_black_garlic">博多黑蒜拉麵 - $1.50</option>
+            <option value="hakata_red_miso">博多赤味噌拉麺 - $1.50</option>
+            <option value="hakata_miso_butter">博多味噌牛油拉麵 - $1.50</option>
+            <option value="kagoshima_kurobuta_cartilage">鹿兒島黑豚王軟骨拉麵 - $1.50</option>
+            <option value="akaoni_king">赤鬼王拉麵 - $1.50</option>
+          </select>
+        </label>
+
+        <label>
+          Quantity sold
+          <input id="quantity" name="quantity" type="number" min="1" step="1" value="1">
+        </label>
+
+        <button type="submit" id="submitButton">Submit order</button>
+      </form>
+    </section>
+
+    <section class="panel result-panel">
+      <div class="result-header">
+        <div>
+          <p class="eyebrow">Result</p>
+          <h2 id="resultTitle">No order sent yet</h2>
+        </div>
+        <span id="statusBadge" class="badge idle">Idle</span>
+      </div>
+
+      <div id="summary" class="summary muted">Submit a ramen order to see updated inventory rows.</div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ingredient</th>
+              <th>Sold</th>
+              <th>Before</th>
+              <th>After</th>
+              <th>Reorder</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="updatesBody">
+            <tr>
+              <td colspan="6" class="empty">Waiting for test result</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details>
+        <summary>Raw JSON</summary>
+        <pre id="rawJson">{}</pre>
+      </details>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
