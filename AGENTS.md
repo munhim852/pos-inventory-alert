@@ -196,6 +196,9 @@ Stage 3.5: Ramen menu recipe logic
   - Tonkotsu-based ramen share `tonkotsu_broth`.
 - UI supports editable per-bowl ingredient usage through `ingredient_overrides`.
 - Backend supports restock payloads with `action: "restock"`.
+- Backend supports dashboard reads with `action: "inventory"`.
+- Orders must be blocked with HTTP 409 when any required ingredient has insufficient stock. Do not deduct partial orders.
+- Seed scripts must not reset existing stock. Existing rows preserve `stock`; only missing rows are created and metadata/reorder levels are updated.
 - `scripts/seedMenuInventory.js` seeds the required ingredient rows.
 
 Stage 4: Dashboard

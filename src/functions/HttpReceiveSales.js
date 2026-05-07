@@ -119,6 +119,28 @@ async function sendDiscordAlert(item, remainingStock, reorderLevel, context) {
     return true;
 }
 
+async function sendOperationsAlert(message, context) {
+    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+
+    if (!webhookUrl) {
+        context.log('DISCORD_WEBHOOK_URL is not configured. Skipping operations alert.');
+        return false;
+    }
+
+    const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: message })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Discord webhook failed with ${response.status}: ${errorText}`);
+    }
+
+    return true;
+}
+
 function resolveMenuItem(body) {
     const menuItemId = body.menu_item_id;
     const menuItemName = body.menu_item;
@@ -158,9 +180,26 @@ function resolveIngredients(menuItem, ingredientOverrides) {
 }
 
 async function updateInventoryItem(tableClient, item, qtySold, context) {
-    const inventoryItem = await tableClient.getEntity(storeId, item);
-    const currentStock = Number(inventoryItem.stock);
-    const reorderLevel = Number(inventoryItem.reorderLevel);
+    const inventorySnapshot = await getInventorySnapshot(tableClient, item);
+    const currentStock = inventorySnapshot.stock;
+    const reorderLevel = inventorySnapshot.reorder_level;
+
+    if (currentStock < qtySold) {
+        const shortage = {
+            item,
+            required: qtySold,
+            available: currentStock,
+            shortage: qtySold - currentStock,
+            reorder_level: reorderLevel
+        };
+
+        await sendInsufficientStockAlert([shortage], context);
+        const error = new Error(`Insufficient stock for ${item}. Required ${qtySold}, available ${currentStock}.`);
+        error.statusCode = 409;
+        error.shortages = [shortage];
+        throw error;
+    }
+
     const newStock = Math.max(currentStock - qtySold, 0);
 
     await tableClient.updateEntity({
@@ -193,6 +232,81 @@ async function updateInventoryItem(tableClient, item, qtySold, context) {
         alert_sent: alertSent,
         alert_error: alertError
     };
+}
+
+async function getInventorySnapshot(tableClient, item) {
+    const inventoryItem = await tableClient.getEntity(storeId, item);
+
+    return {
+        item,
+        display_name: inventoryItem.displayName ?? item,
+        stock: Number(inventoryItem.stock),
+        reorder_level: Number(inventoryItem.reorderLevel),
+        low_stock: Number(inventoryItem.stock) <= Number(inventoryItem.reorderLevel)
+    };
+}
+
+async function listInventory(tableClient) {
+    const items = [];
+
+    for await (const entity of tableClient.listEntities({
+        queryOptions: { filter: `PartitionKey eq '${storeId}'` }
+    })) {
+        items.push({
+            item: entity.rowKey,
+            display_name: entity.displayName ?? entity.rowKey,
+            stock: Number(entity.stock),
+            reorder_level: Number(entity.reorderLevel),
+            low_stock: Number(entity.stock) <= Number(entity.reorderLevel)
+        });
+    }
+
+    return items.sort((a, b) => a.item.localeCompare(b.item));
+}
+
+async function sendInsufficientStockAlert(shortages, context) {
+    const lines = shortages.map((item) =>
+        `${item.item}: required ${item.required}, available ${item.available}, shortage ${item.shortage}`
+    );
+
+    try {
+        return await sendOperationsAlert(`ORDER BLOCKED - INSUFFICIENT STOCK\n${lines.join('\n')}`, context);
+    } catch (error) {
+        context.error(error);
+        return false;
+    }
+}
+
+async function validateStockAvailability(tableClient, requirements, context) {
+    const snapshots = [];
+    const shortages = [];
+
+    for (const [item, requiredQty] of Object.entries(requirements)) {
+        const snapshot = await getInventorySnapshot(tableClient, item);
+        snapshots.push({ ...snapshot, required: requiredQty });
+
+        if (snapshot.stock < requiredQty) {
+            shortages.push({
+                item,
+                display_name: snapshot.display_name,
+                required: requiredQty,
+                available: snapshot.stock,
+                shortage: requiredQty - snapshot.stock,
+                reorder_level: snapshot.reorder_level
+            });
+        }
+    }
+
+    if (shortages.length) {
+        const alertSent = await sendInsufficientStockAlert(shortages, context);
+        const error = new Error('Insufficient stock. Order was not submitted.');
+        error.statusCode = 409;
+        error.shortages = shortages;
+        error.alertSent = alertSent;
+        throw error;
+    }
+
+    return snapshots;
 }
 
 async function restockInventoryItem(tableClient, item, qtyRestock) {
@@ -239,7 +353,9 @@ app.http('HttpReceiveSales', {
         const qtySold = Number(body.qty_sold ?? body.qty_ordered ?? 1);
         const qtyRestock = Number(body.qty_restock ?? body.qty_added ?? 0);
 
-        if (action === 'restock') {
+        if (action === 'inventory') {
+            // Dashboard read-only request.
+        } else if (action === 'restock') {
             if (!item || !Number.isInteger(qtyRestock) || qtyRestock <= 0) {
                 return {
                     status: 400,
@@ -264,6 +380,17 @@ app.http('HttpReceiveSales', {
         context.log(`Action: ${action} | Item: ${item ?? menuItem?.id} | Qty sold: ${qtySold} | Qty restock: ${qtyRestock}`);
 
         try {
+            if (action === 'inventory') {
+                return {
+                    status: 200,
+                    jsonBody: {
+                        status: 'ok',
+                        order_type: 'inventory_dashboard',
+                        inventory: await listInventory(tableClient)
+                    }
+                };
+            }
+
             if (action === 'restock') {
                 const inventoryUpdate = await restockInventoryItem(tableClient, item, qtyRestock);
 
@@ -280,6 +407,11 @@ app.http('HttpReceiveSales', {
             if (menuItem) {
                 const inventoryUpdates = [];
                 const ingredients = resolveIngredients(menuItem, body.ingredient_overrides);
+                const requirements = Object.fromEntries(
+                    Object.entries(ingredients).map(([ingredient, qtyPerOrder]) => [ingredient, qtyPerOrder * qtySold])
+                );
+
+                await validateStockAvailability(tableClient, requirements, context);
 
                 for (const [ingredient, qtyPerOrder] of Object.entries(ingredients)) {
                     inventoryUpdates.push(
@@ -304,6 +436,7 @@ app.http('HttpReceiveSales', {
                 };
             }
 
+            await validateStockAvailability(tableClient, { [item]: qtySold }, context);
             const inventoryUpdate = await updateInventoryItem(tableClient, item, qtySold, context);
 
             return {
@@ -319,6 +452,19 @@ app.http('HttpReceiveSales', {
                 return {
                     status: 404,
                     jsonBody: { status: 'error', message: `Inventory item not found: ${item ?? 'one or more menu ingredients'}` }
+                };
+            }
+
+            if (error.statusCode === 409) {
+                return {
+                    status: 409,
+                    jsonBody: {
+                        status: 'error',
+                        order_type: 'blocked_order',
+                        message: error.message,
+                        shortages: error.shortages ?? [],
+                        alert_sent: error.alertSent ?? false
+                    }
                 };
             }
 

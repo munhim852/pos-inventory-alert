@@ -19,6 +19,7 @@ const inventorySeed = [
     { rowKey: 'butter', displayName: '牛油', stock: 80, reorderLevel: 15 },
     { rowKey: 'bean_sprouts', displayName: '豆芽', stock: 120, reorderLevel: 25 }
 ];
+const legacyRows = ['black_pork_chashu'];
 
 async function main() {
     const connectionString = process.env.STORAGE_CONNECTION_STRING;
@@ -30,17 +31,52 @@ async function main() {
     const tableClient = TableClient.fromConnectionString(connectionString, tableName);
     await tableClient.createTable();
 
-    for (const item of inventorySeed) {
-        await tableClient.upsertEntity({
-            partitionKey: storeId,
-            rowKey: item.rowKey,
-            displayName: item.displayName,
-            stock: item.stock,
-            reorderLevel: item.reorderLevel
-        }, 'Merge');
+    let created = 0;
+    let preserved = 0;
+    let removedLegacyRows = 0;
+
+    for (const rowKey of legacyRows) {
+        try {
+            await tableClient.deleteEntity(storeId, rowKey);
+            removedLegacyRows += 1;
+        } catch (error) {
+            if (error.statusCode !== 404) {
+                throw error;
+            }
+        }
     }
 
-    console.log(`Seeded ${inventorySeed.length} menu inventory rows.`);
+    for (const item of inventorySeed) {
+        try {
+            const existing = await tableClient.getEntity(storeId, item.rowKey);
+
+            await tableClient.updateEntity({
+                partitionKey: storeId,
+                rowKey: item.rowKey,
+                displayName: item.displayName,
+                stock: existing.stock,
+                reorderLevel: item.reorderLevel
+            }, 'Merge');
+
+            preserved += 1;
+        } catch (error) {
+            if (error.statusCode !== 404) {
+                throw error;
+            }
+
+            await tableClient.createEntity({
+                partitionKey: storeId,
+                rowKey: item.rowKey,
+                displayName: item.displayName,
+                stock: item.stock,
+                reorderLevel: item.reorderLevel
+            });
+
+            created += 1;
+        }
+    }
+
+    console.log(`Seed complete. Created ${created} rows, preserved stock for ${preserved} existing rows, and removed ${removedLegacyRows} legacy rows.`);
 }
 
 main().catch((error) => {

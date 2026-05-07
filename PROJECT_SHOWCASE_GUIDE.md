@@ -168,6 +168,9 @@ Completed:
 - Shared ingredients use one inventory pool. For example, all ramen that use chashu deduct from `pork_chashu`, and common toppings such as `ajitama_egg`, `corn`, `kombu`, `narutomaki`, and `tonkotsu_broth` are shared across menu items.
 - Added editable ingredient usage so a test order can override the default quantity per bowl.
 - Added restock support for replenishing an inventory item.
+- Added stock availability checks. If any required ingredient is unavailable, the order is blocked and no inventory rows are deducted.
+- Added a dashboard action to read current inventory from Azure Table Storage.
+- Updated seed logic so it no longer resets stock for existing rows.
 - Added support for payloads such as:
 
 ```json

@@ -78,6 +78,36 @@
       </details>
     </section>
 
+    <section class="panel dashboard-panel">
+      <div class="result-header">
+        <div>
+          <p class="eyebrow">Dashboard</p>
+          <h2>Current Inventory</h2>
+        </div>
+        <button type="button" id="refreshInventory" class="small-button">Refresh</button>
+      </div>
+
+      <div id="dashboardSummary" class="summary muted">Refresh to load current stock from Azure Table Storage.</div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ingredient</th>
+              <th>Stock</th>
+              <th>Reorder</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="inventoryBody">
+            <tr>
+              <td colspan="4" class="empty">No inventory loaded</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <section class="panel restock-panel">
       <div>
         <p class="eyebrow">Restock</p>

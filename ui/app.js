@@ -102,6 +102,9 @@ const restockItem = document.querySelector('#restockItem');
 const restockQuantity = document.querySelector('#restockQuantity');
 const restockButton = document.querySelector('#restockButton');
 const restockSummary = document.querySelector('#restockSummary');
+const refreshInventory = document.querySelector('#refreshInventory');
+const inventoryBody = document.querySelector('#inventoryBody');
+const dashboardSummary = document.querySelector('#dashboardSummary');
 
 function setStatus(label, state) {
   statusBadge.textContent = label;
@@ -171,6 +174,72 @@ function renderUpdates(updates = []) {
   }).join('');
 }
 
+function renderShortages(shortages = []) {
+  if (!shortages.length) {
+    renderUpdates([]);
+    return;
+  }
+
+  updatesBody.innerHTML = shortages.map((shortage) => `
+    <tr>
+      <td>${ingredientName(shortage.item)}</td>
+      <td>${shortage.required}</td>
+      <td>${shortage.available}</td>
+      <td>${shortage.available}</td>
+      <td>${shortage.reorder_level}</td>
+      <td><span class="stock low">Not enough</span></td>
+    </tr>
+  `).join('');
+}
+
+function renderInventory(items = []) {
+  if (!items.length) {
+    inventoryBody.innerHTML = '<tr><td colspan="4" class="empty">No inventory rows returned</td></tr>';
+    return;
+  }
+
+  inventoryBody.innerHTML = items.map((item) => {
+    const status = item.low_stock ? 'Low stock' : 'OK';
+    const statusClass = item.low_stock ? 'low' : 'ok';
+
+    return `
+      <tr>
+        <td>${ingredientName(item.item)}</td>
+        <td>${item.stock}</td>
+        <td>${item.reorder_level}</td>
+        <td><span class="stock ${statusClass}">${status}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function loadInventory() {
+  refreshInventory.disabled = true;
+  dashboardSummary.textContent = 'Loading current inventory...';
+
+  try {
+    const response = await fetch('/api/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'inventory' })
+    });
+    const result = await response.json();
+
+    if (!response.ok || result.status !== 'ok') {
+      throw new Error(result.message || 'Unable to load inventory.');
+    }
+
+    renderInventory(result.inventory);
+    const lowStockCount = result.inventory.filter((item) => item.low_stock).length;
+    dashboardSummary.textContent = `${result.inventory.length} inventory rows loaded. ${lowStockCount} low-stock item(s).`;
+  } catch (error) {
+    dashboardSummary.textContent = error.message;
+    renderInventory([]);
+  } finally {
+    refreshInventory.disabled = false;
+  }
+}
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
 
@@ -202,6 +271,13 @@ form.addEventListener('submit', async (event) => {
     rawJson.textContent = JSON.stringify(result, null, 2);
 
     if (!response.ok || result.status !== 'ok') {
+      if (result.shortages?.length) {
+        resultTitle.textContent = 'Order blocked';
+        summary.textContent = result.message;
+        setStatus('No stock', 'error');
+        renderShortages(result.shortages);
+      }
+
       throw new Error(result.message || 'Order failed.');
     }
 
@@ -209,11 +285,14 @@ form.addEventListener('submit', async (event) => {
     summary.textContent = `Total $${result.total.toFixed(2)}. Updated ${result.inventory_updates.length} inventory rows.`;
     setStatus(result.low_stock_items.length ? 'Low stock' : 'Success', result.low_stock_items.length ? 'warning' : 'success');
     renderUpdates(result.inventory_updates);
+    loadInventory();
   } catch (error) {
-    resultTitle.textContent = 'Order failed';
-    summary.textContent = error.message;
-    setStatus('Error', 'error');
-    renderUpdates([]);
+    if (!summary.textContent || summary.textContent === 'Calling the Azure Function and updating cloud inventory.') {
+      resultTitle.textContent = 'Order failed';
+      summary.textContent = error.message;
+      setStatus('Error', 'error');
+      renderUpdates([]);
+    }
   } finally {
     submitButton.disabled = false;
   }
@@ -255,6 +334,7 @@ restockForm.addEventListener('submit', async (event) => {
     restockSummary.textContent = `Restocked ${ingredientName(result.item)}: ${result.previous_stock} -> ${result.remaining_stock}.`;
     setStatus('Restocked', 'success');
     renderUpdates([result]);
+    loadInventory();
   } catch (error) {
     restockSummary.textContent = error.message;
   } finally {
@@ -263,5 +343,7 @@ restockForm.addEventListener('submit', async (event) => {
 });
 
 menuItem.addEventListener('change', renderUsageFields);
+refreshInventory.addEventListener('click', loadInventory);
 renderUsageFields();
 renderRestockOptions();
+loadInventory();
