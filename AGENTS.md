@@ -209,6 +209,8 @@ Stage 3.5: Ramen menu recipe logic
 - Dashboard also returns `owner_decision`, which is the owner-facing decision engine layer.
 - `owner_decision.owner_summary` should answer stockout risk, reorder action, most profitable menu item, recent risk, and today's decision in plain business language.
 - Menu profitability uses menu price minus ingredient cost from `costPerUnit` metadata.
+- UI portion presets live in `ui/portionPresets.js`; tests live in `scripts/portionPresets.test.js`.
+- Portion presets multiply default recipe quantities, round to ingredient-specific allowed values, and still allow manual override before submit.
 - `scripts/seedMenuInventory.js` seeds the required ingredient rows.
 
 Stage 4: Dashboard

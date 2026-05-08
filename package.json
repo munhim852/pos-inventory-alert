@@ -7,7 +7,7 @@
     "start": "func start",
     "ui": "node scripts/uiServer.js",
     "seed:menu": "node scripts/seedMenuInventory.js",
-    "test": "node --check src/functions/HttpReceiveSales.js"
+    "test": "node --check src/functions/HttpReceiveSales.js && node --check ui/app.js && node --check ui/portionPresets.js && node scripts/portionPresets.test.js"
   },
   "dependencies": {
     "@azure/data-tables": "^13.3.2",

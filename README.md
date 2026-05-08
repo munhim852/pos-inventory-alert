@@ -178,6 +178,18 @@ Most profitable: 鹿兒島黑豚王軟骨拉麵 has the highest gross profit.
 Today decision: Reorder 黑豚叉燒 first.
 ```
 
+The order UI includes portion presets:
+
+```text
+Normal portion: 1x
+More toppings: 1.25x
+Larger portion: 1.5x
+Extra large portion: 1.75x
+Double toppings: 2x
+```
+
+Each preset multiplies the default ingredient usage and rounds to owner-friendly allowed values per ingredient. Manual ingredient overrides are still available after selecting a preset.
+
 Validate JavaScript syntax:
 
 ```bash

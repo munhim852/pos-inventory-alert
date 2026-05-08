@@ -104,6 +104,7 @@ const form = document.querySelector('#orderForm');
 const restockForm = document.querySelector('#restockForm');
 const menuItem = document.querySelector('#menuItem');
 const quantity = document.querySelector('#quantity');
+const portionPreset = document.querySelector('#portionPreset');
 const submitButton = document.querySelector('#submitButton');
 const resultTitle = document.querySelector('#resultTitle');
 const statusBadge = document.querySelector('#statusBadge');
@@ -154,14 +155,21 @@ function ingredientName(id) {
 
 function renderUsageFields() {
   const recipe = menuRecipes[menuItem.value];
+  const ingredientUsage = PortionPresets.applyPortionPreset(recipe.ingredients, portionPreset.value);
 
-  usageFields.innerHTML = Object.entries(recipe.ingredients).map(([ingredient, qty]) => `
+  usageFields.innerHTML = Object.entries(ingredientUsage).map(([ingredient, qty]) => {
+    const allowedValues = PortionPresets.allowedPortionsFor(ingredient);
+
+    return `
     <label class="usage-field">
       <span>${ingredientName(ingredient)} / bowl</span>
-      <input data-ingredient="${ingredient}" type="number" min="0" step="0.05" value="${qty}">
+      <select data-ingredient="${ingredient}">
+        ${allowedValues.map((value) => `<option value="${value}"${value === qty ? ' selected' : ''}>${value}</option>`).join('')}
+      </select>
       <small data-total="${ingredient}"></small>
     </label>
-  `).join('');
+  `;
+  }).join('');
 
   updateUsageTotals();
 }
@@ -169,7 +177,7 @@ function renderUsageFields() {
 function updateUsageTotals() {
   const orderQty = Number(quantity.value) || 0;
 
-  for (const input of usageFields.querySelectorAll('input[data-ingredient]')) {
+  for (const input of usageFields.querySelectorAll('[data-ingredient]')) {
     const total = Number(input.value) * orderQty;
     const unit = ingredientUnits[input.dataset.ingredient] ?? 'unit';
     const totalNode = usageFields.querySelector(`[data-total="${input.dataset.ingredient}"]`);
@@ -183,7 +191,7 @@ function updateUsageTotals() {
 function getIngredientOverrides() {
   const overrides = {};
 
-  for (const input of usageFields.querySelectorAll('input[data-ingredient]')) {
+  for (const input of usageFields.querySelectorAll('[data-ingredient]')) {
     const qty = Number(input.value);
 
     if (!Number.isFinite(qty) || qty < 0) {
@@ -459,8 +467,10 @@ restockForm.addEventListener('submit', async (event) => {
 });
 
 menuItem.addEventListener('change', renderUsageFields);
+portionPreset.addEventListener('change', renderUsageFields);
 quantity.addEventListener('input', updateUsageTotals);
 usageFields.addEventListener('input', updateUsageTotals);
+usageFields.addEventListener('change', updateUsageTotals);
 refreshInventory.addEventListener('click', loadInventory);
 renderUsageFields();
 renderRestockOptions();
