@@ -2,6 +2,9 @@ const assert = require('assert');
 const {
     bestSellingMenuItem,
     ingredientCoverage,
+    calculateMenuProfit,
+    profitAnalysis,
+    bestPromotionTonight,
     reorderRecommendations,
     decisionMessages
 } = require('../ui/ownerDashboard');
@@ -54,21 +57,54 @@ const inventory = [
     }
 ];
 
+const menuProfitability = [
+    {
+        menu_item_id: 'hakata_black_garlic',
+        menu_item: '博多黑蒜拉麵',
+        price: 18.49,
+        ingredient_cost: 4.8
+    },
+    {
+        menu_item_id: 'akaoni_king',
+        menu_item: '赤鬼王拉麵',
+        price: 18.99,
+        ingredient_cost: 4.48
+    }
+];
+
 assert.deepStrictEqual(bestSellingMenuItem(sales), sales[0]);
 
 const coverage = ingredientCoverage(menuAvailability);
 assert.strictEqual(coverage[0].menu_item, '赤鬼王拉麵');
 assert.strictEqual(coverage[0].limiting_ingredient, 'spicy_tonkotsu_broth');
 assert.match(coverage[0].message, /最多可賣 12 碗/);
+assert.strictEqual(coverage[0].stockout_risk, '中');
+
+const profit = calculateMenuProfit(menuProfitability[0]);
+assert.strictEqual(profit.profit_per_bowl, 13.69);
+assert.strictEqual(profit.gross_margin_percent, 74.04);
+
+const profitRows = profitAnalysis(menuAvailability, menuProfitability, sales);
+const blackGarlicProfit = profitRows.find((item) => item.menu_item_id === 'hakata_black_garlic');
+assert.strictEqual(blackGarlicProfit.profit_potential, 246.42);
+assert.ok(blackGarlicProfit.recommendation_score > 0);
+
+const promotion = bestPromotionTonight(menuAvailability, menuProfitability, sales);
+assert.strictEqual(promotion.menu_item, '博多黑蒜拉麵');
+assert.match(promotion.message, /建議今晚主推 博多黑蒜拉麵/);
+assert.ok(promotion.reasons.some((reason) => reason.includes('每碗預計毛利')));
 
 const reorders = reorderRecommendations(inventory);
 assert.strictEqual(reorders.length, 1);
 assert.match(reorders[0].message, /建議今日補 黑豚叉燒/);
 
-const decisions = decisionMessages({ inventory, menuAvailability, sales });
+const decisions = decisionMessages({ inventory, menuAvailability, menuProfitability, sales });
 assert.match(decisions.today_focus.bestseller, /今日最好賣：博多黑蒜拉麵/);
 assert.match(decisions.today_focus.reorder, /建議今日補 黑豚叉燒/);
 assert.match(decisions.today_focus.ingredient_coverage, /赤鬼王拉麵 最多可賣 12 碗/);
-assert.match(decisions.today_focus.decision, /建議今日補 黑豚叉燒/);
+assert.match(decisions.today_focus.tonight_promotion, /今晚建議主推：博多黑蒜拉麵/);
+assert.match(decisions.today_focus.decision, /建議今晚主推 博多黑蒜拉麵/);
+assert.strictEqual(decisions.tonight_promotion.menu_item, '博多黑蒜拉麵');
+assert.ok(decisions.profit.length >= 2);
 
 console.log('Owner dashboard tests passed.');

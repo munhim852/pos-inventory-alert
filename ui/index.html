@@ -35,11 +35,11 @@
         <label>
           份量 preset
           <select id="portionPreset" name="portionPreset">
-            <option value="normal">Normal portion</option>
-            <option value="slightly_more">More toppings</option>
-            <option value="large">Larger portion</option>
-            <option value="extra_large">Extra large portion</option>
-            <option value="double">Double toppings</option>
+            <option value="normal">正常份量</option>
+            <option value="slightly_more">配料多少少</option>
+            <option value="large">大份量</option>
+            <option value="extra_large">特大份量</option>
+            <option value="double">雙倍配料</option>
           </select>
         </label>
 
@@ -58,7 +58,7 @@
           <p class="eyebrow">落單結果</p>
           <h2 id="resultTitle">尚未提交訂單</h2>
         </div>
-        <span id="statusBadge" class="badge idle">Idle</span>
+        <span id="statusBadge" class="badge idle">等待</span>
       </div>
 
       <div id="summary" class="summary muted">提交拉麵訂單後，這裡會顯示扣減結果。</div>
@@ -84,7 +84,7 @@
       </div>
 
       <details>
-        <summary>Raw JSON</summary>
+        <summary>技術資料</summary>
         <pre id="rawJson">{}</pre>
       </details>
     </section>
@@ -93,7 +93,7 @@
       <div class="result-header">
         <div>
           <p class="eyebrow">餐廳老闆 Dashboard</p>
-          <h2>今日營運重點</h2>
+          <h2>今晚重點</h2>
         </div>
         <button type="button" id="refreshInventory" class="small-button">重新整理</button>
       </div>
@@ -101,7 +101,7 @@
       <div id="dashboardSummary" class="summary muted">載入 Azure 庫存資料中。</div>
 
       <div class="decision-panel">
-        <p class="eyebrow">今日重點</p>
+        <p class="eyebrow">今晚重點</p>
         <h3 id="todayDecision">未有決策建議</h3>
         <div class="decision-grid">
           <div>
@@ -113,6 +113,10 @@
             <p id="reorderAnswer">-</p>
           </div>
           <div>
+            <strong>今晚最值得推</strong>
+            <p id="tonightPromotionAnswer">-</p>
+          </div>
+          <div>
             <strong>今日最好賣</strong>
             <p id="bestSellerAnswer">-</p>
           </div>
@@ -121,6 +125,14 @@
             <p id="riskAnswer">-</p>
           </div>
         </div>
+      </div>
+
+      <div class="promotion-card">
+        <p class="eyebrow">今晚最值得推</p>
+        <h3 id="promotionTitle">未有推薦</h3>
+        <ul id="promotionReasons" class="reason-list">
+          <li>載入庫存資料中</li>
+        </ul>
       </div>
 
       <div class="chart-grid">
@@ -164,11 +176,12 @@
                 <th>餐點</th>
                 <th>最多可賣</th>
                 <th>限制食材</th>
+                <th>缺貨風險</th>
               </tr>
             </thead>
             <tbody id="capacityBody">
               <tr>
-                <td colspan="3" class="empty">未載入資料</td>
+                <td colspan="4" class="empty">未載入資料</td>
               </tr>
             </tbody>
           </table>
@@ -184,12 +197,14 @@
                 <th>餐點</th>
                 <th>售價</th>
                 <th>食材成本</th>
+                <th>每碗毛利</th>
                 <th>毛利率</th>
+                <th>今晚最多可賺</th>
               </tr>
             </thead>
             <tbody id="profitBody">
               <tr>
-                <td colspan="4" class="empty">未載入毛利資料</td>
+                <td colspan="6" class="empty">未載入毛利資料</td>
               </tr>
             </tbody>
           </table>

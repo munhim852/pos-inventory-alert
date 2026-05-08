@@ -124,8 +124,11 @@ const profitBody = document.querySelector('#profitBody');
 const todayDecision = document.querySelector('#todayDecision');
 const stockoutAnswer = document.querySelector('#stockoutAnswer');
 const reorderAnswer = document.querySelector('#reorderAnswer');
+const tonightPromotionAnswer = document.querySelector('#tonightPromotionAnswer');
 const bestSellerAnswer = document.querySelector('#bestSellerAnswer');
 const riskAnswer = document.querySelector('#riskAnswer');
+const promotionTitle = document.querySelector('#promotionTitle');
+const promotionReasons = document.querySelector('#promotionReasons');
 const salesChart = document.querySelector('#salesChart');
 const capacityChart = document.querySelector('#capacityChart');
 const ingredientUnits = {
@@ -202,7 +205,7 @@ function updateUsageTotals() {
     const totalNode = usageFields.querySelector(`[data-total="${input.dataset.ingredient}"]`);
 
     if (totalNode) {
-      totalNode.textContent = `total ${Math.round(total * 100) / 100} ${unit}`;
+      totalNode.textContent = `合共 ${Math.round(total * 100) / 100} ${unit}`;
     }
   }
 }
@@ -303,7 +306,7 @@ function renderInventory(items = []) {
 
 function renderMenuCapacity(items = []) {
   if (!items.length) {
-    capacityBody.innerHTML = '<tr><td colspan="3" class="empty">沒有可支撐銷售量資料</td></tr>';
+    capacityBody.innerHTML = '<tr><td colspan="4" class="empty">沒有可支撐銷售量資料</td></tr>';
     return;
   }
 
@@ -312,6 +315,7 @@ function renderMenuCapacity(items = []) {
       <td>${item.menu_item}</td>
       <td>${item.available_bowls} 碗</td>
       <td>${ingredientName(item.limiting_ingredient)}</td>
+      <td>${item.stockout_risk}</td>
     </tr>
   `).join('');
 }
@@ -321,6 +325,7 @@ function renderOwnerDecision(decision) {
     todayDecision.textContent = '未有決策建議';
     stockoutAnswer.textContent = '-';
     reorderAnswer.textContent = '-';
+    tonightPromotionAnswer.textContent = '-';
     bestSellerAnswer.textContent = '-';
     riskAnswer.textContent = '-';
     return;
@@ -329,13 +334,25 @@ function renderOwnerDecision(decision) {
   todayDecision.textContent = decision.today_focus.decision;
   stockoutAnswer.textContent = decision.today_focus.stock_risk;
   reorderAnswer.textContent = decision.today_focus.reorder;
+  tonightPromotionAnswer.textContent = decision.today_focus.tonight_promotion;
   bestSellerAnswer.textContent = decision.today_focus.bestseller;
   riskAnswer.textContent = decision.today_focus.ingredient_coverage;
 }
 
+function renderPromotionCard(promotion) {
+  if (!promotion) {
+    promotionTitle.textContent = '未有推薦';
+    promotionReasons.innerHTML = '<li>暫時未有足夠資料。</li>';
+    return;
+  }
+
+  promotionTitle.textContent = promotion.title;
+  promotionReasons.innerHTML = promotion.reasons.map((reason) => `<li>${reason}</li>`).join('');
+}
+
 function renderProfitability(items = []) {
   if (!items.length) {
-    profitBody.innerHTML = '<tr><td colspan="4" class="empty">沒有毛利資料</td></tr>';
+    profitBody.innerHTML = '<tr><td colspan="6" class="empty">沒有毛利資料</td></tr>';
     return;
   }
 
@@ -344,7 +361,9 @@ function renderProfitability(items = []) {
       <td>${item.menu_item}</td>
       <td>$${item.price.toFixed(2)}</td>
       <td>$${item.ingredient_cost.toFixed(2)}</td>
+      <td>$${item.profit_per_bowl.toFixed(2)}</td>
       <td>${item.gross_margin_percent}%</td>
+      <td>$${item.profit_potential.toFixed(2)}</td>
     </tr>
   `).join('');
 }
@@ -375,7 +394,7 @@ function renderBarList(container, items, valueKey, labelKey, suffix = '') {
 
 async function loadInventory() {
   refreshInventory.disabled = true;
-  dashboardSummary.textContent = 'Loading current inventory...';
+  dashboardSummary.textContent = '正在載入庫存資料...';
 
   try {
     const response = await fetch('/api/order', {
@@ -391,16 +410,20 @@ async function loadInventory() {
 
     const ownerView = OwnerDashboard.decisionMessages({
       inventory: result.inventory,
-      menuAvailability: result.menu_availability
+      menuAvailability: result.menu_availability,
+      menuProfitability: result.owner_decision?.menu_profitability ?? []
     });
 
     renderInventory(result.inventory);
     renderMenuCapacity(ownerView.coverage);
     renderOwnerDecision(ownerView);
-    renderProfitability(result.owner_decision?.menu_profitability ?? []);
+    renderPromotionCard(ownerView.tonight_promotion);
+    renderProfitability(ownerView.profit);
     const lowStockCount = result.inventory.filter((item) => item.low_stock).length;
     const tightest = ownerView.coverage[0];
-    dashboardSummary.textContent = `已載入 ${result.inventory.length} 個食材。${lowStockCount} 個需要補貨。最緊張餐點：${tightest.menu_item}，最多可賣 ${tightest.available_bowls} 碗。`;
+    const tightestText = tightest ? `最緊張餐點：${tightest.menu_item}，最多可賣 ${tightest.available_bowls} 碗。` : '暫未有餐點 coverage 資料。';
+    const promotionText = ownerView.tonight_promotion ? `今晚建議主推：${ownerView.tonight_promotion.menu_item}。` : '';
+    dashboardSummary.textContent = `已載入 ${result.inventory.length} 個食材。${lowStockCount} 個需要補貨。${tightestText}${promotionText}`;
     renderBarList(salesChart, ownerView.chart_data.top_sales, 'bowls_sold', 'menu_item', ' 碗');
     renderBarList(capacityChart, ownerView.chart_data.menu_capacity, 'available_bowls', 'menu_item', ' 碗');
   } catch (error) {
@@ -408,6 +431,7 @@ async function loadInventory() {
     renderInventory([]);
     renderMenuCapacity([]);
     renderOwnerDecision(null);
+    renderPromotionCard(null);
     renderProfitability([]);
     renderBarList(salesChart, [], 'bowls_sold', 'menu_item');
     renderBarList(capacityChart, [], 'available_bowls', 'menu_item');
@@ -466,7 +490,7 @@ form.addEventListener('submit', async (event) => {
     if (!summary.textContent || summary.textContent === 'Calling the Azure Function and updating cloud inventory.') {
       resultTitle.textContent = '訂單失敗';
       summary.textContent = error.message;
-      setStatus('Error', 'error');
+      setStatus('錯誤', 'error');
       renderUpdates([]);
     }
   } finally {
