@@ -155,6 +155,7 @@ The UI also supports:
 - Viewing a current inventory dashboard loaded from Azure Table Storage.
 - Viewing how many bowls each menu item can still sell based on the limiting ingredient.
 - Viewing reorder suggestions based on current stock and estimated daily usage.
+- Viewing owner-friendly decisions, including stockout risk, reorder actions, promotion suggestions, and most profitable menu item.
 - Blocking orders when any required ingredient does not have enough stock.
 
 Seed scripts preserve current stock for existing rows. They only create missing rows, update metadata, and remove legacy rows that should no longer be used.
@@ -166,6 +167,15 @@ tonkotsu_broth: 0.35 L per bowl
 pork_chashu: 2 slices per bowl
 ajitama_egg: 0.5 piece per bowl
 ramen_noodle: 1 pack per bowl
+```
+
+The owner decision engine converts raw inventory into business language. Example:
+
+```text
+Stockout risk: 黑豚叉燒 may run out tonight.
+Reorder: Reorder 300 slice of 黑豚叉燒.
+Most profitable: 鹿兒島黑豚王軟骨拉麵 has the highest gross profit.
+Today decision: Reorder 黑豚叉燒 first.
 ```
 
 Validate JavaScript syntax:

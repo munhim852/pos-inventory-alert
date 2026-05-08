@@ -174,6 +174,14 @@ Completed:
 - Added realistic units and recipe quantities, such as 0.35L broth, 2 chashu slices, 0.5 egg, and 1 noodle pack per ramen.
 - Added menu availability analysis. The system calculates how many bowls each menu item can still sell and identifies the limiting ingredient.
 - Added reorder suggestions using current stock, suggested reorder quantity, and estimated daily usage.
+- Added a Restaurant Owner Decision Engine that answers:
+  - Will I run out of stock?
+  - What should I reorder?
+  - Which menu item is most profitable?
+  - What risks should I know about?
+  - What decision should I make today?
+- Added gross margin logic using menu price and ingredient cost.
+- Added promotion suggestions for overstocked ingredients.
 - Added support for payloads such as:
 
 ```json

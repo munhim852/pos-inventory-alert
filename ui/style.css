@@ -277,6 +277,46 @@ details {
   margin-top: 20px;
 }
 
+.decision-panel {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.decision-panel h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.decision-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.decision-grid div {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.decision-grid strong {
+  font-size: 13px;
+}
+
+.decision-grid p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 summary {
   cursor: pointer;
   color: var(--accent);
@@ -305,5 +345,9 @@ pre {
 
   .dashboard-panel {
     grid-column: auto;
+  }
+
+  .decision-grid {
+    grid-template-columns: 1fr;
   }
 }

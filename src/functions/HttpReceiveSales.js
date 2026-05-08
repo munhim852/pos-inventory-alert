@@ -4,26 +4,26 @@ const { TableClient } = require('@azure/data-tables');
 const tableName = 'Inventory';
 const storeId = 'store-001';
 const inventoryMeta = {
-    tonkotsu_broth: { unit: 'L', suggestedReorderQty: 20, estimatedDailyUsage: 8 },
-    spicy_tonkotsu_broth: { unit: 'L', suggestedReorderQty: 12, estimatedDailyUsage: 3 },
-    miso_broth: { unit: 'L', suggestedReorderQty: 15, estimatedDailyUsage: 5 },
-    black_garlic_sauce: { unit: 'portion', suggestedReorderQty: 60, estimatedDailyUsage: 12 },
-    pork_chashu: { unit: 'slice', suggestedReorderQty: 300, estimatedDailyUsage: 80 },
-    pork_cartilage: { unit: 'portion', suggestedReorderQty: 50, estimatedDailyUsage: 10 },
-    minced_pork: { unit: 'portion', suggestedReorderQty: 60, estimatedDailyUsage: 15 },
-    ajitama_egg: { unit: 'piece', suggestedReorderQty: 120, estimatedDailyUsage: 36 },
-    onsen_egg: { unit: 'piece', suggestedReorderQty: 60, estimatedDailyUsage: 12 },
-    ramen_noodle: { unit: 'pack', suggestedReorderQty: 200, estimatedDailyUsage: 60 },
-    corn: { unit: 'portion', suggestedReorderQty: 120, estimatedDailyUsage: 36 },
-    kombu: { unit: 'portion', suggestedReorderQty: 120, estimatedDailyUsage: 36 },
-    narutomaki: { unit: 'slice', suggestedReorderQty: 150, estimatedDailyUsage: 36 },
-    butter: { unit: 'portion', suggestedReorderQty: 50, estimatedDailyUsage: 10 },
-    bean_sprouts: { unit: 'portion', suggestedReorderQty: 100, estimatedDailyUsage: 20 }
+    tonkotsu_broth: { unit: 'L', suggestedReorderQty: 20, estimatedDailyUsage: 8, costPerUnit: 2.20 },
+    spicy_tonkotsu_broth: { unit: 'L', suggestedReorderQty: 12, estimatedDailyUsage: 3, costPerUnit: 2.50 },
+    miso_broth: { unit: 'L', suggestedReorderQty: 15, estimatedDailyUsage: 5, costPerUnit: 2.00 },
+    black_garlic_sauce: { unit: 'portion', suggestedReorderQty: 60, estimatedDailyUsage: 12, costPerUnit: 0.35 },
+    pork_chashu: { unit: 'slice', suggestedReorderQty: 300, estimatedDailyUsage: 80, costPerUnit: 0.55 },
+    pork_cartilage: { unit: 'portion', suggestedReorderQty: 50, estimatedDailyUsage: 10, costPerUnit: 1.40 },
+    minced_pork: { unit: 'portion', suggestedReorderQty: 60, estimatedDailyUsage: 15, costPerUnit: 0.95 },
+    ajitama_egg: { unit: 'piece', suggestedReorderQty: 120, estimatedDailyUsage: 36, costPerUnit: 0.70 },
+    onsen_egg: { unit: 'piece', suggestedReorderQty: 60, estimatedDailyUsage: 12, costPerUnit: 0.65 },
+    ramen_noodle: { unit: 'pack', suggestedReorderQty: 200, estimatedDailyUsage: 60, costPerUnit: 0.80 },
+    corn: { unit: 'portion', suggestedReorderQty: 120, estimatedDailyUsage: 36, costPerUnit: 0.18 },
+    kombu: { unit: 'portion', suggestedReorderQty: 120, estimatedDailyUsage: 36, costPerUnit: 0.12 },
+    narutomaki: { unit: 'slice', suggestedReorderQty: 150, estimatedDailyUsage: 36, costPerUnit: 0.16 },
+    butter: { unit: 'portion', suggestedReorderQty: 50, estimatedDailyUsage: 10, costPerUnit: 0.40 },
+    bean_sprouts: { unit: 'portion', suggestedReorderQty: 100, estimatedDailyUsage: 20, costPerUnit: 0.22 }
 };
 const menuRecipes = {
     hakata_shio_tonkotsu: {
         name: '博多鹽味豚骨拉麺',
-        price: 1.50,
+        price: 17.99,
         ingredients: {
             tonkotsu_broth: 0.35,
             ramen_noodle: 1,
@@ -36,7 +36,7 @@ const menuRecipes = {
     },
     hakata_black_garlic: {
         name: '博多黑蒜拉麵',
-        price: 1.50,
+        price: 18.49,
         ingredients: {
             tonkotsu_broth: 0.35,
             ramen_noodle: 1,
@@ -50,7 +50,7 @@ const menuRecipes = {
     },
     hakata_red_miso: {
         name: '博多赤味噌拉麺',
-        price: 1.50,
+        price: 17.99,
         ingredients: {
             miso_broth: 0.35,
             ramen_noodle: 1,
@@ -63,7 +63,7 @@ const menuRecipes = {
     },
     hakata_miso_butter: {
         name: '博多味噌牛油拉麵',
-        price: 1.50,
+        price: 18.49,
         ingredients: {
             miso_broth: 0.35,
             ramen_noodle: 1,
@@ -77,7 +77,7 @@ const menuRecipes = {
     },
     kagoshima_kurobuta_cartilage: {
         name: '鹿兒島黑豚王軟骨拉麵',
-        price: 1.50,
+        price: 19.99,
         ingredients: {
             tonkotsu_broth: 0.35,
             ramen_noodle: 1,
@@ -90,7 +90,7 @@ const menuRecipes = {
     },
     akaoni_king: {
         name: '赤鬼王拉麵',
-        price: 1.50,
+        price: 18.99,
         ingredients: {
             spicy_tonkotsu_broth: 0.35,
             ramen_noodle: 1,
@@ -210,7 +210,11 @@ function buildReorderSuggestion(snapshot) {
     const suggestedQty = Number(snapshot.suggested_reorder_qty ?? 0);
     const dailyUsage = Number(snapshot.estimated_daily_usage ?? 0);
 
-    if (!snapshot.low_stock || suggestedQty <= 0) {
+    if ((snapshot.days_coverage === null || snapshot.days_coverage >= 2) && !snapshot.low_stock) {
+        return null;
+    }
+
+    if (suggestedQty <= 0) {
         return null;
     }
 
@@ -220,6 +224,35 @@ function buildReorderSuggestion(snapshot) {
         unit: snapshot.unit,
         estimated_coverage_days: dailyUsage > 0 ? roundQty(suggestedQty / dailyUsage) : null
     };
+}
+
+function serviceWindow(daysRemaining) {
+    if (daysRemaining === null) {
+        return 'soon';
+    }
+
+    const riskDate = new Date();
+    riskDate.setDate(riskDate.getDate() + Math.max(Math.ceil(daysRemaining), 0));
+    const weekday = riskDate.toLocaleDateString('en-US', { weekday: 'long' });
+    const service = daysRemaining < 1 ? 'tonight' : `${weekday} dinner service`;
+
+    return service;
+}
+
+function ownerSentenceForStock(item) {
+    if (item.days_coverage === null) {
+        return `${item.display_name} stock needs review. Daily usage is not configured.`;
+    }
+
+    if (item.days_coverage < 1) {
+        return `${item.display_name} may run out tonight.`;
+    }
+
+    if (item.days_coverage < 2) {
+        return `${item.display_name} may run out by ${serviceWindow(item.days_coverage)}.`;
+    }
+
+    return `${item.display_name} has about ${item.days_coverage} days of coverage.`;
 }
 
 async function updateInventoryItem(tableClient, item, qtySold, context) {
@@ -307,17 +340,112 @@ async function listInventory(tableClient) {
             unit: entity.unit ?? inventoryMeta[entity.rowKey]?.unit ?? 'unit',
             suggested_reorder_qty: Number(entity.suggestedReorderQty ?? inventoryMeta[entity.rowKey]?.suggestedReorderQty ?? 0),
             estimated_daily_usage: Number(entity.estimatedDailyUsage ?? inventoryMeta[entity.rowKey]?.estimatedDailyUsage ?? 0),
+            cost_per_unit: Number(entity.costPerUnit ?? inventoryMeta[entity.rowKey]?.costPerUnit ?? 0),
             low_stock: Number(entity.stock) <= Number(entity.reorderLevel)
         };
-
-        items.push({
+        const daysCoverage = snapshot.estimated_daily_usage > 0 ? roundQty(snapshot.stock / snapshot.estimated_daily_usage) : null;
+        const enrichedSnapshot = {
             ...snapshot,
-            days_coverage: snapshot.estimated_daily_usage > 0 ? roundQty(snapshot.stock / snapshot.estimated_daily_usage) : null,
-            reorder_suggestion: buildReorderSuggestion(snapshot)
-        });
+            days_coverage: daysCoverage,
+            owner_message: ownerSentenceForStock({ ...snapshot, days_coverage: daysCoverage }),
+            reorder_suggestion: buildReorderSuggestion({ ...snapshot, days_coverage: daysCoverage })
+        };
+
+        items.push(enrichedSnapshot);
     }
 
     return items.sort((a, b) => a.item.localeCompare(b.item));
+}
+
+function calculateMenuProfitability(inventoryByItem) {
+    return Object.entries(menuRecipes).map(([menuItemId, recipe]) => {
+        const ingredientCost = Object.entries(recipe.ingredients).reduce((total, [ingredient, qty]) => {
+            const item = inventoryByItem[ingredient];
+            return total + (qty * Number(item?.cost_per_unit ?? inventoryMeta[ingredient]?.costPerUnit ?? 0));
+        }, 0);
+        const grossProfit = recipe.price - ingredientCost;
+        const grossMargin = recipe.price > 0 ? (grossProfit / recipe.price) * 100 : 0;
+
+        return {
+            menu_item_id: menuItemId,
+            menu_item: recipe.name,
+            price: recipe.price,
+            ingredient_cost: roundQty(ingredientCost),
+            gross_profit: roundQty(grossProfit),
+            gross_margin_percent: roundQty(grossMargin)
+        };
+    }).sort((a, b) => b.gross_profit - a.gross_profit);
+}
+
+function buildPromotionSuggestions(inventory, availability) {
+    const overstocked = inventory.filter((item) => item.days_coverage !== null && item.days_coverage >= 7);
+    const suggestions = [];
+
+    for (const item of overstocked) {
+        const matchingMenus = availability
+            .filter((menu) => menu.ingredient_capacity.some((ingredient) => ingredient.item === item.item))
+            .filter((menu) => menu.available_bowls > 0)
+            .slice(0, 2);
+
+        for (const menu of matchingMenus) {
+            suggestions.push({
+                item: item.item,
+                display_name: item.display_name,
+                menu_item: menu.menu_item,
+                message: `${item.display_name} is overstocked. Push ${menu.menu_item} today to use it faster.`
+            });
+        }
+    }
+
+    return suggestions.slice(0, 5);
+}
+
+function buildOwnerDecisionEngine(inventory, availability) {
+    const inventoryByItem = Object.fromEntries(inventory.map((item) => [item.item, item]));
+    const profitability = calculateMenuProfitability(inventoryByItem);
+    const stockoutRisks = inventory
+        .filter((item) => item.days_coverage !== null && item.days_coverage < 2)
+        .sort((a, b) => a.days_coverage - b.days_coverage)
+        .map((item) => ({
+            item: item.item,
+            display_name: item.display_name,
+            days_remaining: item.days_coverage,
+            message: ownerSentenceForStock(item)
+        }));
+    const reorderActions = inventory
+        .filter((item) => item.days_coverage !== null && item.days_coverage < 2)
+        .map((item) => ({
+            item: item.item,
+            display_name: item.display_name,
+            suggested_reorder_qty: item.suggested_reorder_qty,
+            unit: item.unit,
+            estimated_coverage_days: item.estimated_daily_usage > 0 ? roundQty(item.suggested_reorder_qty / item.estimated_daily_usage) : null,
+            message: `Reorder ${item.suggested_reorder_qty} ${item.unit} of ${item.display_name}.`
+        }));
+    const promotionSuggestions = buildPromotionSuggestions(inventory, availability);
+    const bestMarginItem = profitability[0];
+    const tightestMenu = availability[0];
+    const topRisk = stockoutRisks[0];
+    const todayDecision = topRisk
+        ? `Reorder ${topRisk.display_name} first, then avoid pushing menu items limited by ${topRisk.display_name}.`
+        : promotionSuggestions[0]
+            ? promotionSuggestions[0].message
+            : `Push ${bestMarginItem.menu_item}; it has the strongest gross profit today.`;
+
+    return {
+        owner_summary: {
+            stockout_answer: topRisk ? topRisk.message : 'No ingredient is projected to run out in the next 2 days.',
+            reorder_answer: reorderActions.length ? reorderActions[0].message : 'No urgent reorder needed today.',
+            most_profitable_answer: `${bestMarginItem.menu_item} has the highest gross profit: $${bestMarginItem.gross_profit} per bowl (${bestMarginItem.gross_margin_percent}% margin).`,
+            recent_risk_answer: tightestMenu ? `${tightestMenu.menu_item} can sell ${tightestMenu.available_bowls} more bowls before ${tightestMenu.limiting_ingredient_name} becomes the blocker.` : 'No menu capacity risk found.',
+            today_decision: todayDecision
+        },
+        stockout_risks: stockoutRisks,
+        reorder_actions: reorderActions,
+        promotion_suggestions: promotionSuggestions,
+        menu_profitability: profitability,
+        menu_capacity: availability
+    };
 }
 
 async function calculateMenuAvailability(tableClient) {
@@ -476,13 +604,17 @@ app.http('HttpReceiveSales', {
 
         try {
             if (action === 'inventory') {
+                const inventory = await listInventory(tableClient);
+                const menuAvailability = await calculateMenuAvailability(tableClient);
+
                 return {
                     status: 200,
                     jsonBody: {
                         status: 'ok',
                         order_type: 'inventory_dashboard',
-                        inventory: await listInventory(tableClient),
-                        menu_availability: await calculateMenuAvailability(tableClient)
+                        inventory,
+                        menu_availability: menuAvailability,
+                        owner_decision: buildOwnerDecisionEngine(inventory, menuAvailability)
                     }
                 };
             }

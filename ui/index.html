@@ -18,12 +18,12 @@
         <label>
           Menu item
           <select id="menuItem" name="menuItem">
-            <option value="hakata_shio_tonkotsu">博多鹽味豚骨拉麺 - $1.50</option>
-            <option value="hakata_black_garlic">博多黑蒜拉麵 - $1.50</option>
-            <option value="hakata_red_miso">博多赤味噌拉麺 - $1.50</option>
-            <option value="hakata_miso_butter">博多味噌牛油拉麵 - $1.50</option>
-            <option value="kagoshima_kurobuta_cartilage">鹿兒島黑豚王軟骨拉麵 - $1.50</option>
-            <option value="akaoni_king">赤鬼王拉麵 - $1.50</option>
+            <option value="hakata_shio_tonkotsu">博多鹽味豚骨拉麺 - $17.99</option>
+            <option value="hakata_black_garlic">博多黑蒜拉麵 - $18.49</option>
+            <option value="hakata_red_miso">博多赤味噌拉麺 - $17.99</option>
+            <option value="hakata_miso_butter">博多味噌牛油拉麵 - $18.49</option>
+            <option value="kagoshima_kurobuta_cartilage">鹿兒島黑豚王軟骨拉麵 - $19.99</option>
+            <option value="akaoni_king">赤鬼王拉麵 - $18.99</option>
           </select>
         </label>
 
@@ -89,6 +89,29 @@
 
       <div id="dashboardSummary" class="summary muted">Refresh to load current stock from Azure Table Storage.</div>
 
+      <div class="decision-panel">
+        <p class="eyebrow">Owner Decision Engine</p>
+        <h3 id="todayDecision">No decision loaded</h3>
+        <div class="decision-grid">
+          <div>
+            <strong>Stock risk</strong>
+            <p id="stockoutAnswer">-</p>
+          </div>
+          <div>
+            <strong>Reorder</strong>
+            <p id="reorderAnswer">-</p>
+          </div>
+          <div>
+            <strong>Most profitable</strong>
+            <p id="profitAnswer">-</p>
+          </div>
+          <div>
+            <strong>Recent risk</strong>
+            <p id="riskAnswer">-</p>
+          </div>
+        </div>
+      </div>
+
       <div class="table-wrap">
         <table>
           <thead>
@@ -129,6 +152,27 @@
           </table>
         </div>
       </div>
+
+      <div class="capacity-block">
+        <p class="eyebrow">Menu Profitability</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Menu item</th>
+                <th>Price</th>
+                <th>Cost</th>
+                <th>Gross margin</th>
+              </tr>
+            </thead>
+            <tbody id="profitBody">
+              <tr>
+                <td colspan="4" class="empty">No profitability loaded</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <section class="panel restock-panel">
@@ -145,7 +189,7 @@
 
         <label>
           Quantity added
-          <input id="restockQuantity" name="restockQuantity" type="number" min="1" step="1" value="10">
+          <input id="restockQuantity" name="restockQuantity" type="number" min="0.05" step="0.05" value="10">
         </label>
 
         <button type="submit" id="restockButton">Restock item</button>

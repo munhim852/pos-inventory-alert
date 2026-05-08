@@ -206,6 +206,9 @@ Stage 3.5: Ramen menu recipe logic
   - noodles in packs, default 1 pack per bowl
 - Dashboard returns `menu_availability` with available bowls and limiting ingredient.
 - Dashboard inventory rows include unit, days coverage, and reorder suggestion metadata.
+- Dashboard also returns `owner_decision`, which is the owner-facing decision engine layer.
+- `owner_decision.owner_summary` should answer stockout risk, reorder action, most profitable menu item, recent risk, and today's decision in plain business language.
+- Menu profitability uses menu price minus ingredient cost from `costPerUnit` metadata.
 - `scripts/seedMenuInventory.js` seeds the required ingredient rows.
 
 Stage 4: Dashboard

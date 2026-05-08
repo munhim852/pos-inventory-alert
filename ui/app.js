@@ -1,6 +1,7 @@
 const menuRecipes = {
   hakata_shio_tonkotsu: {
     name: '博多鹽味豚骨拉麺',
+    price: 17.99,
     ingredients: {
       tonkotsu_broth: 0.35,
       ramen_noodle: 1,
@@ -13,6 +14,7 @@ const menuRecipes = {
   },
   hakata_black_garlic: {
     name: '博多黑蒜拉麵',
+    price: 18.49,
     ingredients: {
       tonkotsu_broth: 0.35,
       ramen_noodle: 1,
@@ -26,6 +28,7 @@ const menuRecipes = {
   },
   hakata_red_miso: {
     name: '博多赤味噌拉麺',
+    price: 17.99,
     ingredients: {
       miso_broth: 0.35,
       ramen_noodle: 1,
@@ -38,6 +41,7 @@ const menuRecipes = {
   },
   hakata_miso_butter: {
     name: '博多味噌牛油拉麵',
+    price: 18.49,
     ingredients: {
       miso_broth: 0.35,
       ramen_noodle: 1,
@@ -51,6 +55,7 @@ const menuRecipes = {
   },
   kagoshima_kurobuta_cartilage: {
     name: '鹿兒島黑豚王軟骨拉麵',
+    price: 19.99,
     ingredients: {
       tonkotsu_broth: 0.35,
       ramen_noodle: 1,
@@ -63,6 +68,7 @@ const menuRecipes = {
   },
   akaoni_king: {
     name: '赤鬼王拉麵',
+    price: 18.99,
     ingredients: {
       spicy_tonkotsu_broth: 0.35,
       ramen_noodle: 1,
@@ -113,6 +119,12 @@ const refreshInventory = document.querySelector('#refreshInventory');
 const inventoryBody = document.querySelector('#inventoryBody');
 const dashboardSummary = document.querySelector('#dashboardSummary');
 const capacityBody = document.querySelector('#capacityBody');
+const profitBody = document.querySelector('#profitBody');
+const todayDecision = document.querySelector('#todayDecision');
+const stockoutAnswer = document.querySelector('#stockoutAnswer');
+const reorderAnswer = document.querySelector('#reorderAnswer');
+const profitAnswer = document.querySelector('#profitAnswer');
+const riskAnswer = document.querySelector('#riskAnswer');
 const ingredientUnits = {
   tonkotsu_broth: 'L',
   spicy_tonkotsu_broth: 'L',
@@ -277,6 +289,39 @@ function renderMenuCapacity(items = []) {
   `).join('');
 }
 
+function renderOwnerDecision(decision) {
+  if (!decision?.owner_summary) {
+    todayDecision.textContent = 'No decision loaded';
+    stockoutAnswer.textContent = '-';
+    reorderAnswer.textContent = '-';
+    profitAnswer.textContent = '-';
+    riskAnswer.textContent = '-';
+    return;
+  }
+
+  todayDecision.textContent = decision.owner_summary.today_decision;
+  stockoutAnswer.textContent = decision.owner_summary.stockout_answer;
+  reorderAnswer.textContent = decision.owner_summary.reorder_answer;
+  profitAnswer.textContent = decision.owner_summary.most_profitable_answer;
+  riskAnswer.textContent = decision.owner_summary.recent_risk_answer;
+}
+
+function renderProfitability(items = []) {
+  if (!items.length) {
+    profitBody.innerHTML = '<tr><td colspan="4" class="empty">No profitability rows returned</td></tr>';
+    return;
+  }
+
+  profitBody.innerHTML = items.map((item) => `
+    <tr>
+      <td>${item.menu_item}</td>
+      <td>$${item.price.toFixed(2)}</td>
+      <td>$${item.ingredient_cost.toFixed(2)}</td>
+      <td>${item.gross_margin_percent}%</td>
+    </tr>
+  `).join('');
+}
+
 async function loadInventory() {
   refreshInventory.disabled = true;
   dashboardSummary.textContent = 'Loading current inventory...';
@@ -295,6 +340,8 @@ async function loadInventory() {
 
     renderInventory(result.inventory);
     renderMenuCapacity(result.menu_availability);
+    renderOwnerDecision(result.owner_decision);
+    renderProfitability(result.owner_decision?.menu_profitability ?? []);
     const lowStockCount = result.inventory.filter((item) => item.low_stock).length;
     const tightest = result.menu_availability[0];
     dashboardSummary.textContent = `${result.inventory.length} inventory rows loaded. ${lowStockCount} low-stock item(s). Tightest item: ${tightest.menu_item} (${tightest.available_bowls} bowls).`;
@@ -302,6 +349,8 @@ async function loadInventory() {
     dashboardSummary.textContent = error.message;
     renderInventory([]);
     renderMenuCapacity([]);
+    renderOwnerDecision(null);
+    renderProfitability([]);
   } finally {
     refreshInventory.disabled = false;
   }
@@ -370,8 +419,8 @@ restockForm.addEventListener('submit', async (event) => {
 
   const qty = Number(restockQuantity.value);
 
-  if (!Number.isInteger(qty) || qty <= 0) {
-    restockSummary.textContent = 'Restock quantity must be a positive whole number.';
+  if (!Number.isFinite(qty) || qty <= 0) {
+    restockSummary.textContent = 'Restock quantity must be a positive number.';
     return;
   }
 
