@@ -178,6 +178,18 @@ Most profitable: 鹿兒島黑豚王軟骨拉麵 has the highest gross profit.
 Today decision: Reorder 黑豚叉燒 first.
 ```
 
+The dashboard UI is owner-facing Traditional Chinese. Main sections:
+
+```text
+今日重點
+今日最好賣
+食材風險
+食材可支撐銷售量
+建議行動
+```
+
+It includes a demo daily sales summary until real sales history is added.
+
 The order UI includes portion presets:
 
 ```text

@@ -211,6 +211,9 @@ Stage 3.5: Ramen menu recipe logic
 - Menu profitability uses menu price minus ingredient cost from `costPerUnit` metadata.
 - UI portion presets live in `ui/portionPresets.js`; tests live in `scripts/portionPresets.test.js`.
 - Portion presets multiply default recipe quantities, round to ingredient-specific allowed values, and still allow manual override before submit.
+- Owner-facing dashboard helpers live in `ui/ownerDashboard.js`; tests live in `scripts/ownerDashboard.test.js`.
+- UI should stay Traditional Chinese and owner-friendly. Avoid raw-only labels such as "Stock" or "Low stock" on the main dashboard.
+- Demo daily sales data is local in `ui/ownerDashboard.js` and can be replaced by real sales history later.
 - `scripts/seedMenuInventory.js` seeds the required ingredient rows.
 
 Stage 4: Dashboard

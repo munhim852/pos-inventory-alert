@@ -3,20 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>POS Inventory Test UI</title>
+  <title>餐廳營運決策 Dashboard</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <main class="app">
     <section class="panel order-panel">
       <div>
-        <p class="eyebrow">Ramen POS Test</p>
-        <h1>Inventory Order Console</h1>
+        <p class="eyebrow">拉麵店 POS 測試</p>
+        <h1>落單與庫存扣減</h1>
       </div>
 
       <form id="orderForm" class="form">
         <label>
-          Menu item
+          餐點
           <select id="menuItem" name="menuItem">
             <option value="hakata_shio_tonkotsu">博多鹽味豚骨拉麺 - $17.99</option>
             <option value="hakata_black_garlic">博多黑蒜拉麵 - $18.49</option>
@@ -28,12 +28,12 @@
         </label>
 
         <label>
-          Quantity sold
+          售出碗數
           <input id="quantity" name="quantity" type="number" min="1" step="1" value="1">
         </label>
 
         <label>
-          Portion preset
+          份量 preset
           <select id="portionPreset" name="portionPreset">
             <option value="normal">Normal portion</option>
             <option value="slightly_more">More toppings</option>
@@ -44,40 +44,40 @@
         </label>
 
         <div class="usage-block">
-          <div class="usage-title">Ingredient usage per bowl</div>
+          <div class="usage-title">每碗食材用量</div>
           <div id="usageFields" class="usage-fields"></div>
         </div>
 
-        <button type="submit" id="submitButton">Submit order</button>
+        <button type="submit" id="submitButton">提交訂單</button>
       </form>
     </section>
 
     <section class="panel result-panel">
       <div class="result-header">
         <div>
-          <p class="eyebrow">Result</p>
-          <h2 id="resultTitle">No order sent yet</h2>
+          <p class="eyebrow">落單結果</p>
+          <h2 id="resultTitle">尚未提交訂單</h2>
         </div>
         <span id="statusBadge" class="badge idle">Idle</span>
       </div>
 
-      <div id="summary" class="summary muted">Submit a ramen order to see updated inventory rows.</div>
+      <div id="summary" class="summary muted">提交拉麵訂單後，這裡會顯示扣減結果。</div>
 
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Ingredient</th>
-              <th>Sold</th>
-              <th>Before</th>
-              <th>After</th>
-              <th>Reorder</th>
-              <th>Status</th>
+              <th>食材</th>
+              <th>用量</th>
+              <th>扣減前</th>
+              <th>扣減後</th>
+              <th>補貨線</th>
+              <th>狀態</th>
             </tr>
           </thead>
           <tbody id="updatesBody">
             <tr>
-              <td colspan="6" class="empty">Waiting for test result</td>
+              <td colspan="6" class="empty">等待訂單結果</td>
             </tr>
           </tbody>
         </table>
@@ -92,34 +92,45 @@
     <section class="panel dashboard-panel">
       <div class="result-header">
         <div>
-          <p class="eyebrow">Dashboard</p>
-          <h2>Current Inventory</h2>
+          <p class="eyebrow">餐廳老闆 Dashboard</p>
+          <h2>今日營運重點</h2>
         </div>
-        <button type="button" id="refreshInventory" class="small-button">Refresh</button>
+        <button type="button" id="refreshInventory" class="small-button">重新整理</button>
       </div>
 
-      <div id="dashboardSummary" class="summary muted">Refresh to load current stock from Azure Table Storage.</div>
+      <div id="dashboardSummary" class="summary muted">載入 Azure 庫存資料中。</div>
 
       <div class="decision-panel">
-        <p class="eyebrow">Owner Decision Engine</p>
-        <h3 id="todayDecision">No decision loaded</h3>
+        <p class="eyebrow">今日重點</p>
+        <h3 id="todayDecision">未有決策建議</h3>
         <div class="decision-grid">
           <div>
-            <strong>Stock risk</strong>
+            <strong>我會唔會唔夠貨？</strong>
             <p id="stockoutAnswer">-</p>
           </div>
           <div>
-            <strong>Reorder</strong>
+            <strong>我應該補咩？</strong>
             <p id="reorderAnswer">-</p>
           </div>
           <div>
-            <strong>Most profitable</strong>
-            <p id="profitAnswer">-</p>
+            <strong>今日最好賣</strong>
+            <p id="bestSellerAnswer">-</p>
           </div>
           <div>
-            <strong>Recent risk</strong>
+            <strong>食材風險</strong>
             <p id="riskAnswer">-</p>
           </div>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <p class="eyebrow">今日最好賣</p>
+          <div id="salesChart" class="bar-list"></div>
+        </div>
+        <div class="chart-card">
+          <p class="eyebrow">食材可支撐銷售量</p>
+          <div id="capacityChart" class="bar-list"></div>
         </div>
       </div>
 
@@ -127,37 +138,37 @@
         <table>
           <thead>
             <tr>
-              <th>Ingredient</th>
-              <th>Stock</th>
-              <th>Unit</th>
-              <th>Reorder</th>
-              <th>Coverage</th>
-              <th>Suggestion</th>
-              <th>Status</th>
+              <th>食材</th>
+              <th>現有庫存</th>
+              <th>單位</th>
+              <th>補貨線</th>
+              <th>可支撐日數</th>
+              <th>建議行動</th>
+              <th>狀態</th>
             </tr>
           </thead>
           <tbody id="inventoryBody">
             <tr>
-              <td colspan="7" class="empty">No inventory loaded</td>
+              <td colspan="7" class="empty">未載入庫存</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div class="capacity-block">
-        <p class="eyebrow">Menu Capacity</p>
+        <p class="eyebrow">可支撐銷售量</p>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Menu item</th>
-                <th>Can sell</th>
-                <th>Limiting ingredient</th>
+                <th>餐點</th>
+                <th>最多可賣</th>
+                <th>限制食材</th>
               </tr>
             </thead>
             <tbody id="capacityBody">
               <tr>
-                <td colspan="3" class="empty">No capacity loaded</td>
+                <td colspan="3" class="empty">未載入資料</td>
               </tr>
             </tbody>
           </table>
@@ -165,20 +176,20 @@
       </div>
 
       <div class="capacity-block">
-        <p class="eyebrow">Menu Profitability</p>
+        <p class="eyebrow">Menu 毛利</p>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Menu item</th>
-                <th>Price</th>
-                <th>Cost</th>
-                <th>Gross margin</th>
+                <th>餐點</th>
+                <th>售價</th>
+                <th>食材成本</th>
+                <th>毛利率</th>
               </tr>
             </thead>
             <tbody id="profitBody">
               <tr>
-                <td colspan="4" class="empty">No profitability loaded</td>
+                <td colspan="4" class="empty">未載入毛利資料</td>
               </tr>
             </tbody>
           </table>
@@ -188,29 +199,30 @@
 
     <section class="panel restock-panel">
       <div>
-        <p class="eyebrow">Restock</p>
-        <h2>Add Inventory</h2>
+        <p class="eyebrow">補貨</p>
+        <h2>增加庫存</h2>
       </div>
 
       <form id="restockForm" class="form compact">
         <label>
-          Ingredient
+          食材
           <select id="restockItem" name="restockItem"></select>
         </label>
 
         <label>
-          Quantity added
+          補貨數量
           <input id="restockQuantity" name="restockQuantity" type="number" min="0.05" step="0.05" value="10">
         </label>
 
-        <button type="submit" id="restockButton">Restock item</button>
+        <button type="submit" id="restockButton">補貨</button>
       </form>
 
-      <div id="restockSummary" class="summary muted">Use this to refill shared ingredient pools.</div>
+      <div id="restockSummary" class="summary muted">用來補充共用食材庫存。</div>
     </section>
   </main>
 
   <script src="/portionPresets.js"></script>
+  <script src="/ownerDashboard.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

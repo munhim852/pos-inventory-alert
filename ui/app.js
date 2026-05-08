@@ -124,8 +124,10 @@ const profitBody = document.querySelector('#profitBody');
 const todayDecision = document.querySelector('#todayDecision');
 const stockoutAnswer = document.querySelector('#stockoutAnswer');
 const reorderAnswer = document.querySelector('#reorderAnswer');
-const profitAnswer = document.querySelector('#profitAnswer');
+const bestSellerAnswer = document.querySelector('#bestSellerAnswer');
 const riskAnswer = document.querySelector('#riskAnswer');
+const salesChart = document.querySelector('#salesChart');
+const capacityChart = document.querySelector('#capacityChart');
 const ingredientUnits = {
   tonkotsu_broth: 'L',
   spicy_tonkotsu_broth: 'L',
@@ -149,6 +151,23 @@ function setStatus(label, state) {
   statusBadge.className = `badge ${state}`;
 }
 
+function statusLabel(isLowStock) {
+  return isLowStock ? '需要補貨' : '庫存正常';
+}
+
+function unitLabel(unit) {
+  const labels = {
+    L: 'L',
+    slice: '片',
+    piece: '隻',
+    pack: '包',
+    portion: '份',
+    unit: '單位'
+  };
+
+  return labels[unit] ?? unit;
+}
+
 function ingredientName(id) {
   return ingredientLabels[id] ? `${ingredientLabels[id]} (${id})` : id;
 }
@@ -162,7 +181,7 @@ function renderUsageFields() {
 
     return `
     <label class="usage-field">
-      <span>${ingredientName(ingredient)} / bowl</span>
+      <span>${ingredientName(ingredient)} / 每碗</span>
       <select data-ingredient="${ingredient}">
         ${allowedValues.map((value) => `<option value="${value}"${value === qty ? ' selected' : ''}>${value}</option>`).join('')}
       </select>
@@ -214,12 +233,12 @@ function renderRestockOptions() {
 
 function renderUpdates(updates = []) {
   if (!updates.length) {
-    updatesBody.innerHTML = '<tr><td colspan="6" class="empty">No inventory rows returned</td></tr>';
+    updatesBody.innerHTML = '<tr><td colspan="6" class="empty">沒有庫存更新</td></tr>';
     return;
   }
 
   updatesBody.innerHTML = updates.map((update) => {
-    const status = update.low_stock ? 'Low stock' : 'OK';
+    const status = statusLabel(update.low_stock);
     const statusClass = update.low_stock ? 'low' : 'ok';
     const qty = update.qty_sold ?? update.qty_restock;
 
@@ -249,30 +268,30 @@ function renderShortages(shortages = []) {
       <td>${shortage.available}</td>
       <td>${shortage.available}</td>
       <td>${shortage.reorder_level}</td>
-      <td><span class="stock low">Not enough</span></td>
+      <td><span class="stock low">不夠貨</span></td>
     </tr>
   `).join('');
 }
 
 function renderInventory(items = []) {
   if (!items.length) {
-    inventoryBody.innerHTML = '<tr><td colspan="7" class="empty">No inventory rows returned</td></tr>';
+    inventoryBody.innerHTML = '<tr><td colspan="7" class="empty">沒有庫存資料</td></tr>';
     return;
   }
 
   inventoryBody.innerHTML = items.map((item) => {
-    const status = item.low_stock ? 'Low stock' : 'OK';
+    const status = statusLabel(item.low_stock);
     const statusClass = item.low_stock ? 'low' : 'ok';
     const suggestion = item.reorder_suggestion
-      ? `Order ${item.reorder_suggestion.suggested_reorder_qty} ${item.unit}`
-      : '-';
-    const coverage = item.days_coverage === null ? '-' : `${item.days_coverage} days`;
+      ? `建議補 ${item.reorder_suggestion.suggested_reorder_qty} ${unitLabel(item.unit)}`
+      : '暫不需要補貨';
+    const coverage = item.days_coverage === null ? '-' : `${item.days_coverage} 日`;
 
     return `
       <tr>
         <td>${ingredientName(item.item)}</td>
         <td>${item.stock}</td>
-        <td>${item.unit}</td>
+        <td>${unitLabel(item.unit)}</td>
         <td>${item.reorder_level}</td>
         <td>${coverage}</td>
         <td>${suggestion}</td>
@@ -284,39 +303,39 @@ function renderInventory(items = []) {
 
 function renderMenuCapacity(items = []) {
   if (!items.length) {
-    capacityBody.innerHTML = '<tr><td colspan="3" class="empty">No capacity rows returned</td></tr>';
+    capacityBody.innerHTML = '<tr><td colspan="3" class="empty">沒有可支撐銷售量資料</td></tr>';
     return;
   }
 
   capacityBody.innerHTML = items.map((item) => `
     <tr>
       <td>${item.menu_item}</td>
-      <td>${item.available_bowls} bowls</td>
+      <td>${item.available_bowls} 碗</td>
       <td>${ingredientName(item.limiting_ingredient)}</td>
     </tr>
   `).join('');
 }
 
 function renderOwnerDecision(decision) {
-  if (!decision?.owner_summary) {
-    todayDecision.textContent = 'No decision loaded';
+  if (!decision?.today_focus) {
+    todayDecision.textContent = '未有決策建議';
     stockoutAnswer.textContent = '-';
     reorderAnswer.textContent = '-';
-    profitAnswer.textContent = '-';
+    bestSellerAnswer.textContent = '-';
     riskAnswer.textContent = '-';
     return;
   }
 
-  todayDecision.textContent = decision.owner_summary.today_decision;
-  stockoutAnswer.textContent = decision.owner_summary.stockout_answer;
-  reorderAnswer.textContent = decision.owner_summary.reorder_answer;
-  profitAnswer.textContent = decision.owner_summary.most_profitable_answer;
-  riskAnswer.textContent = decision.owner_summary.recent_risk_answer;
+  todayDecision.textContent = decision.today_focus.decision;
+  stockoutAnswer.textContent = decision.today_focus.stock_risk;
+  reorderAnswer.textContent = decision.today_focus.reorder;
+  bestSellerAnswer.textContent = decision.today_focus.bestseller;
+  riskAnswer.textContent = decision.today_focus.ingredient_coverage;
 }
 
 function renderProfitability(items = []) {
   if (!items.length) {
-    profitBody.innerHTML = '<tr><td colspan="4" class="empty">No profitability rows returned</td></tr>';
+    profitBody.innerHTML = '<tr><td colspan="4" class="empty">沒有毛利資料</td></tr>';
     return;
   }
 
@@ -328,6 +347,30 @@ function renderProfitability(items = []) {
       <td>${item.gross_margin_percent}%</td>
     </tr>
   `).join('');
+}
+
+function renderBarList(container, items, valueKey, labelKey, suffix = '') {
+  if (!items.length) {
+    container.innerHTML = '<div class="empty">沒有資料</div>';
+    return;
+  }
+
+  const maxValue = Math.max(...items.map((item) => Number(item[valueKey]) || 0), 1);
+
+  container.innerHTML = items.map((item) => {
+    const value = Number(item[valueKey]) || 0;
+    const width = Math.max((value / maxValue) * 100, 4);
+
+    return `
+      <div class="bar-row">
+        <div class="bar-label">
+          <span>${item[labelKey]}</span>
+          <strong>${value}${suffix}</strong>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
+      </div>
+    `;
+  }).join('');
 }
 
 async function loadInventory() {
@@ -346,19 +389,28 @@ async function loadInventory() {
       throw new Error(result.message || 'Unable to load inventory.');
     }
 
+    const ownerView = OwnerDashboard.decisionMessages({
+      inventory: result.inventory,
+      menuAvailability: result.menu_availability
+    });
+
     renderInventory(result.inventory);
-    renderMenuCapacity(result.menu_availability);
-    renderOwnerDecision(result.owner_decision);
+    renderMenuCapacity(ownerView.coverage);
+    renderOwnerDecision(ownerView);
     renderProfitability(result.owner_decision?.menu_profitability ?? []);
     const lowStockCount = result.inventory.filter((item) => item.low_stock).length;
-    const tightest = result.menu_availability[0];
-    dashboardSummary.textContent = `${result.inventory.length} inventory rows loaded. ${lowStockCount} low-stock item(s). Tightest item: ${tightest.menu_item} (${tightest.available_bowls} bowls).`;
+    const tightest = ownerView.coverage[0];
+    dashboardSummary.textContent = `已載入 ${result.inventory.length} 個食材。${lowStockCount} 個需要補貨。最緊張餐點：${tightest.menu_item}，最多可賣 ${tightest.available_bowls} 碗。`;
+    renderBarList(salesChart, ownerView.chart_data.top_sales, 'bowls_sold', 'menu_item', ' 碗');
+    renderBarList(capacityChart, ownerView.chart_data.menu_capacity, 'available_bowls', 'menu_item', ' 碗');
   } catch (error) {
     dashboardSummary.textContent = error.message;
     renderInventory([]);
     renderMenuCapacity([]);
     renderOwnerDecision(null);
     renderProfitability([]);
+    renderBarList(salesChart, [], 'bowls_sold', 'menu_item');
+    renderBarList(capacityChart, [], 'available_bowls', 'menu_item');
   } finally {
     refreshInventory.disabled = false;
   }
@@ -370,15 +422,15 @@ form.addEventListener('submit', async (event) => {
   const qty = Number(quantity.value);
 
   if (!Number.isInteger(qty) || qty <= 0) {
-    setStatus('Invalid', 'error');
-    summary.textContent = 'Quantity must be a positive whole number.';
+    setStatus('輸入錯誤', 'error');
+    summary.textContent = '售出碗數必須是正整數。';
     return;
   }
 
   submitButton.disabled = true;
-  setStatus('Sending', 'loading');
-  resultTitle.textContent = 'Submitting order...';
-  summary.textContent = 'Calling the Azure Function and updating cloud inventory.';
+  setStatus('提交中', 'loading');
+  resultTitle.textContent = '正在提交訂單...';
+  summary.textContent = '正在更新雲端庫存。';
 
   try {
     const response = await fetch('/api/order', {
@@ -396,9 +448,9 @@ form.addEventListener('submit', async (event) => {
 
     if (!response.ok || result.status !== 'ok') {
       if (result.shortages?.length) {
-        resultTitle.textContent = 'Order blocked';
-        summary.textContent = result.message;
-        setStatus('No stock', 'error');
+        resultTitle.textContent = '訂單已阻止';
+        summary.textContent = '有食材不夠，系統沒有扣減任何庫存。';
+        setStatus('不夠貨', 'error');
         renderShortages(result.shortages);
       }
 
@@ -406,13 +458,13 @@ form.addEventListener('submit', async (event) => {
     }
 
     resultTitle.textContent = `${result.menu_item} x ${result.qty_ordered}`;
-    summary.textContent = `Total $${result.total.toFixed(2)}. Updated ${result.inventory_updates.length} inventory rows.`;
-    setStatus(result.low_stock_items.length ? 'Low stock' : 'Success', result.low_stock_items.length ? 'warning' : 'success');
+    summary.textContent = `總額 $${result.total.toFixed(2)}。已更新 ${result.inventory_updates.length} 個食材庫存。`;
+    setStatus(result.low_stock_items.length ? '需要補貨' : '成功', result.low_stock_items.length ? 'warning' : 'success');
     renderUpdates(result.inventory_updates);
     loadInventory();
   } catch (error) {
     if (!summary.textContent || summary.textContent === 'Calling the Azure Function and updating cloud inventory.') {
-      resultTitle.textContent = 'Order failed';
+      resultTitle.textContent = '訂單失敗';
       summary.textContent = error.message;
       setStatus('Error', 'error');
       renderUpdates([]);
@@ -428,12 +480,12 @@ restockForm.addEventListener('submit', async (event) => {
   const qty = Number(restockQuantity.value);
 
   if (!Number.isFinite(qty) || qty <= 0) {
-    restockSummary.textContent = 'Restock quantity must be a positive number.';
+    restockSummary.textContent = '補貨數量必須是正數。';
     return;
   }
 
   restockButton.disabled = true;
-  restockSummary.textContent = 'Sending restock update...';
+  restockSummary.textContent = '正在提交補貨...';
 
   try {
     const response = await fetch('/api/order', {
@@ -453,10 +505,10 @@ restockForm.addEventListener('submit', async (event) => {
       throw new Error(result.message || 'Restock failed.');
     }
 
-    resultTitle.textContent = `Restocked ${ingredientName(result.item)}`;
-    summary.textContent = `Added ${result.qty_restock}. Stock moved from ${result.previous_stock} to ${result.remaining_stock}.`;
-    restockSummary.textContent = `Restocked ${ingredientName(result.item)}: ${result.previous_stock} -> ${result.remaining_stock}.`;
-    setStatus('Restocked', 'success');
+    resultTitle.textContent = `已補貨：${ingredientName(result.item)}`;
+    summary.textContent = `新增 ${result.qty_restock} ${unitLabel(result.unit)}。庫存由 ${result.previous_stock} 變成 ${result.remaining_stock}。`;
+    restockSummary.textContent = `已補 ${ingredientName(result.item)}：${result.previous_stock} -> ${result.remaining_stock}`;
+    setStatus('已補貨', 'success');
     renderUpdates([result]);
     loadInventory();
   } catch (error) {
