@@ -199,6 +199,13 @@ Stage 3.5: Ramen menu recipe logic
 - Backend supports dashboard reads with `action: "inventory"`.
 - Orders must be blocked with HTTP 409 when any required ingredient has insufficient stock. Do not deduct partial orders.
 - Seed scripts must not reset existing stock. Existing rows preserve `stock`; only missing rows are created and metadata/reorder levels are updated.
+- Recipe quantities use realistic units:
+  - broth in L, default 0.35L per bowl
+  - chashu in slices, default 2 slices per bowl
+  - eggs in pieces, default 0.5 ajitama egg per bowl
+  - noodles in packs, default 1 pack per bowl
+- Dashboard returns `menu_availability` with available bowls and limiting ingredient.
+- Dashboard inventory rows include unit, days coverage, and reorder suggestion metadata.
 - `scripts/seedMenuInventory.js` seeds the required ingredient rows.
 
 Stage 4: Dashboard

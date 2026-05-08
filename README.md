@@ -153,9 +153,20 @@ The UI also supports:
 - Editing ingredient usage per bowl before submitting an order.
 - Restocking a shared ingredient pool such as `pork_chashu`, `tonkotsu_broth`, `ajitama_egg`, `corn`, `kombu`, or `narutomaki`.
 - Viewing a current inventory dashboard loaded from Azure Table Storage.
+- Viewing how many bowls each menu item can still sell based on the limiting ingredient.
+- Viewing reorder suggestions based on current stock and estimated daily usage.
 - Blocking orders when any required ingredient does not have enough stock.
 
 Seed scripts preserve current stock for existing rows. They only create missing rows, update metadata, and remove legacy rows that should no longer be used.
+
+Recipe quantities use realistic units. Example:
+
+```text
+tonkotsu_broth: 0.35 L per bowl
+pork_chashu: 2 slices per bowl
+ajitama_egg: 0.5 piece per bowl
+ramen_noodle: 1 pack per bowl
+```
 
 Validate JavaScript syntax:
 

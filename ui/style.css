@@ -149,7 +149,7 @@ button:disabled {
 }
 
 .usage-field {
-  grid-template-columns: minmax(0, 1fr) 76px;
+  grid-template-columns: minmax(0, 1fr) 76px 92px;
   align-items: center;
   gap: 10px;
 }
@@ -162,6 +162,12 @@ button:disabled {
 
 .usage-field input {
   min-height: 36px;
+}
+
+.usage-field small {
+  color: var(--muted);
+  font-size: 12px;
+  text-align: right;
 }
 
 .result-header {
@@ -263,6 +269,12 @@ details {
 
 .dashboard-panel {
   grid-column: 2;
+}
+
+.capacity-block {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
 }
 
 summary {

@@ -171,6 +171,9 @@ Completed:
 - Added stock availability checks. If any required ingredient is unavailable, the order is blocked and no inventory rows are deducted.
 - Added a dashboard action to read current inventory from Azure Table Storage.
 - Updated seed logic so it no longer resets stock for existing rows.
+- Added realistic units and recipe quantities, such as 0.35L broth, 2 chashu slices, 0.5 egg, and 1 noodle pack per ramen.
+- Added menu availability analysis. The system calculates how many bowls each menu item can still sell and identifies the limiting ingredient.
+- Added reorder suggestions using current stock, suggested reorder quantity, and estimated daily usage.
 - Added support for payloads such as:
 
 ```json

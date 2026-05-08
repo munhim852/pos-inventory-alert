@@ -95,16 +95,39 @@
             <tr>
               <th>Ingredient</th>
               <th>Stock</th>
+              <th>Unit</th>
               <th>Reorder</th>
+              <th>Coverage</th>
+              <th>Suggestion</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody id="inventoryBody">
             <tr>
-              <td colspan="4" class="empty">No inventory loaded</td>
+              <td colspan="7" class="empty">No inventory loaded</td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="capacity-block">
+        <p class="eyebrow">Menu Capacity</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Menu item</th>
+                <th>Can sell</th>
+                <th>Limiting ingredient</th>
+              </tr>
+            </thead>
+            <tbody id="capacityBody">
+              <tr>
+                <td colspan="3" class="empty">No capacity loaded</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 

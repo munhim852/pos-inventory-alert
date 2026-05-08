@@ -2,9 +2,10 @@ const menuRecipes = {
   hakata_shio_tonkotsu: {
     name: '博多鹽味豚骨拉麺',
     ingredients: {
-      tonkotsu_broth: 1,
-      pork_chashu: 1,
-      ajitama_egg: 1,
+      tonkotsu_broth: 0.35,
+      ramen_noodle: 1,
+      pork_chashu: 2,
+      ajitama_egg: 0.5,
       corn: 1,
       kombu: 1,
       narutomaki: 1
@@ -13,10 +14,11 @@ const menuRecipes = {
   hakata_black_garlic: {
     name: '博多黑蒜拉麵',
     ingredients: {
-      tonkotsu_broth: 1,
+      tonkotsu_broth: 0.35,
+      ramen_noodle: 1,
       black_garlic_sauce: 1,
-      pork_chashu: 1,
-      ajitama_egg: 1,
+      pork_chashu: 2,
+      ajitama_egg: 0.5,
       corn: 1,
       kombu: 1,
       narutomaki: 1
@@ -25,9 +27,10 @@ const menuRecipes = {
   hakata_red_miso: {
     name: '博多赤味噌拉麺',
     ingredients: {
-      miso_broth: 1,
-      pork_chashu: 1,
-      ajitama_egg: 1,
+      miso_broth: 0.35,
+      ramen_noodle: 1,
+      pork_chashu: 2,
+      ajitama_egg: 0.5,
       corn: 1,
       kombu: 1,
       narutomaki: 1
@@ -36,10 +39,11 @@ const menuRecipes = {
   hakata_miso_butter: {
     name: '博多味噌牛油拉麵',
     ingredients: {
-      miso_broth: 1,
+      miso_broth: 0.35,
+      ramen_noodle: 1,
       butter: 1,
-      pork_chashu: 1,
-      ajitama_egg: 1,
+      pork_chashu: 2,
+      ajitama_egg: 0.5,
       corn: 1,
       kombu: 1,
       narutomaki: 1
@@ -48,9 +52,10 @@ const menuRecipes = {
   kagoshima_kurobuta_cartilage: {
     name: '鹿兒島黑豚王軟骨拉麵',
     ingredients: {
-      tonkotsu_broth: 1,
+      tonkotsu_broth: 0.35,
+      ramen_noodle: 1,
       pork_cartilage: 1,
-      ajitama_egg: 1,
+      ajitama_egg: 0.5,
       corn: 1,
       kombu: 1,
       narutomaki: 1
@@ -59,7 +64,8 @@ const menuRecipes = {
   akaoni_king: {
     name: '赤鬼王拉麵',
     ingredients: {
-      spicy_tonkotsu_broth: 1,
+      spicy_tonkotsu_broth: 0.35,
+      ramen_noodle: 1,
       minced_pork: 1,
       bean_sprouts: 1,
       onsen_egg: 1,
@@ -80,6 +86,7 @@ const ingredientLabels = {
   minced_pork: '炒豬肉碎',
   ajitama_egg: '溏心蛋',
   onsen_egg: '溫泉蛋',
+  ramen_noodle: '拉麵',
   corn: '玉米',
   kombu: '昆布',
   narutomaki: '魚板',
@@ -105,6 +112,24 @@ const restockSummary = document.querySelector('#restockSummary');
 const refreshInventory = document.querySelector('#refreshInventory');
 const inventoryBody = document.querySelector('#inventoryBody');
 const dashboardSummary = document.querySelector('#dashboardSummary');
+const capacityBody = document.querySelector('#capacityBody');
+const ingredientUnits = {
+  tonkotsu_broth: 'L',
+  spicy_tonkotsu_broth: 'L',
+  miso_broth: 'L',
+  black_garlic_sauce: 'portion',
+  pork_chashu: 'slice',
+  pork_cartilage: 'portion',
+  minced_pork: 'portion',
+  ajitama_egg: 'piece',
+  onsen_egg: 'piece',
+  ramen_noodle: 'pack',
+  corn: 'portion',
+  kombu: 'portion',
+  narutomaki: 'slice',
+  butter: 'portion',
+  bean_sprouts: 'portion'
+};
 
 function setStatus(label, state) {
   statusBadge.textContent = label;
@@ -120,10 +145,27 @@ function renderUsageFields() {
 
   usageFields.innerHTML = Object.entries(recipe.ingredients).map(([ingredient, qty]) => `
     <label class="usage-field">
-      <span>${ingredientName(ingredient)}</span>
-      <input data-ingredient="${ingredient}" type="number" min="0" step="0.25" value="${qty}">
+      <span>${ingredientName(ingredient)} / bowl</span>
+      <input data-ingredient="${ingredient}" type="number" min="0" step="0.05" value="${qty}">
+      <small data-total="${ingredient}"></small>
     </label>
   `).join('');
+
+  updateUsageTotals();
+}
+
+function updateUsageTotals() {
+  const orderQty = Number(quantity.value) || 0;
+
+  for (const input of usageFields.querySelectorAll('input[data-ingredient]')) {
+    const total = Number(input.value) * orderQty;
+    const unit = ingredientUnits[input.dataset.ingredient] ?? 'unit';
+    const totalNode = usageFields.querySelector(`[data-total="${input.dataset.ingredient}"]`);
+
+    if (totalNode) {
+      totalNode.textContent = `total ${Math.round(total * 100) / 100} ${unit}`;
+    }
+  }
 }
 
 function getIngredientOverrides() {
@@ -194,23 +236,45 @@ function renderShortages(shortages = []) {
 
 function renderInventory(items = []) {
   if (!items.length) {
-    inventoryBody.innerHTML = '<tr><td colspan="4" class="empty">No inventory rows returned</td></tr>';
+    inventoryBody.innerHTML = '<tr><td colspan="7" class="empty">No inventory rows returned</td></tr>';
     return;
   }
 
   inventoryBody.innerHTML = items.map((item) => {
     const status = item.low_stock ? 'Low stock' : 'OK';
     const statusClass = item.low_stock ? 'low' : 'ok';
+    const suggestion = item.reorder_suggestion
+      ? `Order ${item.reorder_suggestion.suggested_reorder_qty} ${item.unit}`
+      : '-';
+    const coverage = item.days_coverage === null ? '-' : `${item.days_coverage} days`;
 
     return `
       <tr>
         <td>${ingredientName(item.item)}</td>
         <td>${item.stock}</td>
+        <td>${item.unit}</td>
         <td>${item.reorder_level}</td>
+        <td>${coverage}</td>
+        <td>${suggestion}</td>
         <td><span class="stock ${statusClass}">${status}</span></td>
       </tr>
     `;
   }).join('');
+}
+
+function renderMenuCapacity(items = []) {
+  if (!items.length) {
+    capacityBody.innerHTML = '<tr><td colspan="3" class="empty">No capacity rows returned</td></tr>';
+    return;
+  }
+
+  capacityBody.innerHTML = items.map((item) => `
+    <tr>
+      <td>${item.menu_item}</td>
+      <td>${item.available_bowls} bowls</td>
+      <td>${ingredientName(item.limiting_ingredient)}</td>
+    </tr>
+  `).join('');
 }
 
 async function loadInventory() {
@@ -230,11 +294,14 @@ async function loadInventory() {
     }
 
     renderInventory(result.inventory);
+    renderMenuCapacity(result.menu_availability);
     const lowStockCount = result.inventory.filter((item) => item.low_stock).length;
-    dashboardSummary.textContent = `${result.inventory.length} inventory rows loaded. ${lowStockCount} low-stock item(s).`;
+    const tightest = result.menu_availability[0];
+    dashboardSummary.textContent = `${result.inventory.length} inventory rows loaded. ${lowStockCount} low-stock item(s). Tightest item: ${tightest.menu_item} (${tightest.available_bowls} bowls).`;
   } catch (error) {
     dashboardSummary.textContent = error.message;
     renderInventory([]);
+    renderMenuCapacity([]);
   } finally {
     refreshInventory.disabled = false;
   }
@@ -343,6 +410,8 @@ restockForm.addEventListener('submit', async (event) => {
 });
 
 menuItem.addEventListener('change', renderUsageFields);
+quantity.addEventListener('input', updateUsageTotals);
+usageFields.addEventListener('input', updateUsageTotals);
 refreshInventory.addEventListener('click', loadInventory);
 renderUsageFields();
 renderRestockOptions();
